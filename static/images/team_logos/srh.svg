@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F26522"/><stop offset="100%" stop-color="#B24A17"/></linearGradient></defs>
+  <circle cx="120" cy="120" r="114" fill="url(#g)" stroke="#000000" stroke-width="10" />
+  <text x="120" y="136" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="72" font-weight="800" fill="#000000">SRH</text>
+</svg>

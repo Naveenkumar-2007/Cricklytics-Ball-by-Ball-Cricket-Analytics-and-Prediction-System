@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3A225D"/><stop offset="100%" stop-color="#2A1744"/></linearGradient></defs>
+  <circle cx="120" cy="120" r="114" fill="url(#g)" stroke="#B49A57" stroke-width="10" />
+  <text x="120" y="136" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="74" font-weight="800" fill="#B49A57">KKR</text>
+</svg>

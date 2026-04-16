@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cricklytics: Ball-by-Ball Cricket Analytics and Prediction System</title>
+    <style>
+        :root {
+            --bg-main: radial-gradient(circle at top right, #eef8ff 0%, #f6f8fb 45%, #f3f9f6 100%);
+            --text-main: #1d2b36;
+            --card-bg: #ffffff;
+            --card-border: #dde3ea;
+            --card-shadow: 0 8px 20px rgba(15, 41, 64, 0.06);
+            --input-bg: #ffffff;
+            --input-border: #c9d3de;
+            --muted-text: #64748b;
+            --table-border: #dbe5ef;
+            --table-head: #f8fafc;
+            --chart-card-bg: linear-gradient(180deg, #fbfdff 0%, #f8fbff 100%);
+            --plot-bg: #ffffff;
+        }
+
+        body { font-family: Segoe UI, Arial, sans-serif; margin: 0; background: radial-gradient(circle at top right, #eef8ff 0%, #f6f8fb 45%, #f3f9f6 100%); color: #1d2b36; }
+        body { background: var(--bg-main); color: var(--text-main); transition: background 0.25s ease, color 0.25s ease; }
+        .wrap { max-width: 1500px; margin: 24px auto; padding: 0 16px; }
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px; margin-bottom: 16px; box-shadow: var(--card-shadow); }
+        .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .full { grid-column: 1 / -1; }
+        label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px; }
+        input, select, button { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: inherit; }
+        button { background: #0b7a5a; color: #fff; border: none; font-weight: 700; cursor: pointer; }
+        h1, h2, h3 { margin-top: 0; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+        .brand-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
+        .brand-title {
+            margin: 0;
+            font-size: clamp(1.05rem, 1.4vw, 1.45rem);
+            line-height: 1.25;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            color: inherit;
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .main-brand-logo {
+            width: 56px;
+            height: 56px;
+            display: block;
+            object-fit: cover;
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid #c9d3de;
+            padding: 2px;
+            box-sizing: border-box;
+            box-shadow: 0 6px 14px rgba(8, 22, 40, 0.18);
+            flex: 0 0 auto;
+        }
+        .competition-logo-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #dbe5ef;
+            border-radius: 999px;
+            background: #ffffff;
+            padding: 3px;
+            flex: 0 0 auto;
+        }
+        .competition-logo-wrap.international-brand-wrap {
+            border-radius: 14px;
+            width: 62px;
+            height: 62px;
+            padding: 6px;
+            box-sizing: border-box;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+        }
+        .ipl-brand-logo {
+            width: 88px;
+            height: 30px;
+            object-fit: contain;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #0c1b2f 0%, #102845 100%);
+            border: 1px solid #274267;
+            padding: 3px 8px;
+            box-sizing: border-box;
+            box-shadow: 0 6px 14px rgba(8, 22, 40, 0.22);
+        }
+        .ipl-brand-logo.international-brand-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+        .topbar-controls { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+        .theme-toggle { width: auto; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--input-border); background: var(--card-bg); color: inherit; font-weight: 700; cursor: pointer; }
+        .competition-switch { display: inline-flex; gap: 8px; padding: 4px; border: 1px solid var(--input-border); border-radius: 999px; background: var(--card-bg); }
+        .competition-pill { width: auto; padding: 8px 12px; border-radius: 999px; border: 1px solid transparent; background: transparent; color: inherit; font-weight: 700; }
+        .competition-pill.active { background: #0b7a5a; color: #ffffff; }
+        .error { background: #fff2f0; color: #b42318; padding: 10px; border: 1px solid #ffd1cc; border-radius: 8px; }
+        .ok { background: #ecfdf3; color: #067647; padding: 10px; border: 1px solid #abefc6; border-radius: 8px; }
+        .pillgrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+        .pill { border-radius: 10px; padding: 12px; color: #fff; text-align: center; font-weight: 700; }
+        .chase { background: #0b7a5a; }
+        .defend { background: #334155; }
+        .charts { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+        .charts img { width: 100%; border: 1px solid #d3dbe5; border-radius: 10px; }
+        .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 12px; align-items: stretch; }
+        .chart-card { border: 1px solid var(--table-border); border-radius: 12px; background: var(--chart-card-bg); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .chart-title { font-size: 16px; font-weight: 700; margin: 0 0 10px 0; color: #0f2940; }
+        .chart-note { font-size: 14px; color: #475467; margin-top: auto; }
+        .chart-image { width: 100%; border: 1px solid var(--table-border); border-radius: 10px; display: block; background: var(--plot-bg); }
+        .plotly-canvas { width: 100%; height: 460px; border: 1px solid var(--table-border); border-radius: 10px; background: var(--plot-bg); }
+        .plotly-canvas.small { height: 390px; }
+        .win-broadcast { border: 1px solid var(--table-border); border-radius: 10px; background: var(--plot-bg); padding: 14px; min-height: 220px; display: flex; flex-direction: column; justify-content: center; }
+        .win-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; column-gap: 8px; margin-bottom: 8px; }
+        .win-team { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .win-flag { width: 38px; height: 38px; border-radius: 50%; border: 1px solid #cbd5e1; object-fit: cover; background: #fff; }
+        .win-flag-fallback { font-size: 20px; line-height: 1; width: 38px; height: 38px; border-radius: 50%; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+        .win-name { font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 4px; }
+        .win-vs { font-size: 18px; font-weight: 700; color: #334155; }
+        .win-title { text-align: center; font-size: 15px; font-weight: 700; color: #111827; margin: 8px 0 10px; }
+        .win-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .win-meta .left { text-align: left; font-size: 18px; font-weight: 700; }
+        .win-meta .right { text-align: right; font-size: 18px; font-weight: 700; }
+        .win-bar-wrap { width: 100%; height: 18px; border: 1px solid #cbd5e1; border-radius: 999px; overflow: hidden; background: #e2e8f0; }
+        .win-bar { height: 100%; display: flex; }
+        .win-left { height: 100%; }
+        .win-right { height: 100%; }
+        .debug-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+        .debug-pill { border: 1px solid var(--table-border); border-radius: 10px; background: var(--plot-bg); padding: 8px; }
+        .debug-label { font-size: 12px; color: var(--muted-text); }
+        .debug-value { font-size: 18px; font-weight: 700; color: #0f2940; }
+        .summary-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        .summary-table th, .summary-table td { border: 1px solid var(--table-border); padding: 8px; text-align: left; }
+        .summary-table th { background: var(--table-head); }
+        .team-cell { display: inline-flex; align-items: center; gap: 8px; }
+        .team-logo { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #cbd5e1; object-fit: cover; background: #fff; }
+        .team-logo-fallback { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; background: #fff; }
+        .row-first { background: #eef4ff; }
+        .row-second { background: #eefcf4; }
+        .kpi-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+        .kpi-card { border: 1px solid var(--table-border); border-radius: 12px; padding: 10px; background: var(--plot-bg); }
+        .kpi-label { font-size: 12px; color: var(--muted-text); margin-bottom: 4px; }
+        .kpi-value { font-size: 20px; font-weight: 800; color: #0f2940; }
+        .matchup-hero { display: grid; grid-template-columns: 68px 1fr 68px; gap: 16px; align-items: center; border: 1px solid #dbe5ef; border-radius: 14px; background: linear-gradient(135deg, #0b2239 0%, #103256 50%, #0a2540 100%); padding: 12px 14px; margin: 10px 0 12px; }
+        .hero-side { display: flex; align-items: center; justify-content: center; }
+        .hero-center { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; min-width: 0; }
+        .hero-team { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; }
+        .hero-team.right { justify-content: center; }
+        .hero-logo { width: 56px; height: 56px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.25); object-fit: cover; background: #fff; }
+        .hero-role { font-size: 12px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.04em; }
+        .hero-name { font-size: 18px; font-weight: 800; color: #ffffff; line-height: 1.15; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .hero-vs { font-size: 16px; font-weight: 800; color: #e2e8f0; text-transform: uppercase; letter-spacing: 0.08em; padding: 0 6px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #e5eaf0; padding: 6px; text-align: left; }
+        @media (max-width: 1200px) { .chart-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 1000px) {
+            .kpi-strip, .debug-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .topbar { align-items: flex-start; }
+            .topbar-controls { flex-wrap: wrap; justify-content: flex-end; }
+            .brand-title { white-space: normal; }
+        }
+        @media (max-width: 800px) {
+            .topbar { flex-direction: column; align-items: flex-start; }
+            .topbar-controls { width: 100%; justify-content: space-between; gap: 8px; }
+            .brand-wrap { width: 100%; }
+            .main-brand-logo { width: 50px; height: 50px; }
+            .ipl-brand-logo { width: 82px; height: 28px; }
+            .competition-logo-wrap.international-brand-wrap { width: 56px; height: 56px; padding: 5px; }
+            .brand-title { font-size: 1rem; }
+            .competition-switch { flex: 1 1 auto; min-width: 0; }
+            .grid, .grid2, .pillgrid, .charts, .kpi-strip, .debug-grid { grid-template-columns: 1fr; }
+            .matchup-hero { grid-template-columns: 56px 1fr 56px; gap: 10px; }
+            .hero-center { grid-template-columns: 1fr; gap: 6px; }
+            .hero-vs { padding: 6px 0; }
+            .hero-name { font-size: 16px; }
+            .hero-logo { width: 48px; height: 48px; }
+        }
+        @media (max-width: 560px) {
+            .topbar-controls { flex-direction: column; align-items: stretch; }
+            .competition-switch { width: 100%; justify-content: space-between; }
+            .competition-pill { flex: 1 1 0; text-align: center; }
+            .theme-toggle { width: 100%; }
+            .brand-wrap { row-gap: 8px; }
+            .competition-logo-wrap { align-self: flex-start; }
+            .ipl-brand-logo { width: 78px; height: 26px; }
+            .competition-logo-wrap.international-brand-wrap { width: 50px; height: 50px; padding: 4px; }
+        }
+
+        body.dark-mode {
+            --bg-main: radial-gradient(circle at top right, #0b1420 0%, #0a1018 55%, #0a0f16 100%);
+            --text-main: #d8e2ef;
+            --card-bg: #111b28;
+            --card-border: #25364b;
+            --card-shadow: 0 10px 24px rgba(2, 6, 14, 0.35);
+            --input-bg: #0f1724;
+            --input-border: #2a3a4f;
+            --muted-text: #8fa2bd;
+            --table-border: #2c3f56;
+            --table-head: #162435;
+            --chart-card-bg: linear-gradient(180deg, #111a27 0%, #0f1724 100%);
+            --plot-bg: #0f1724;
+        }
+
+        body.dark-mode .chart-title,
+        body.dark-mode .debug-value,
+        body.dark-mode .kpi-value,
+        body.dark-mode .win-name,
+        body.dark-mode .win-vs,
+        body.dark-mode .win-title { color: #e6eef8; }
+        body.dark-mode .ipl-brand-logo {
+            background: linear-gradient(135deg, #0a1627 0%, #0e233b 100%);
+            border-color: #2f4c74;
+        }
+        body.dark-mode .main-brand-logo {
+            background: #0f1724;
+            border-color: #2a3a4f;
+        }
+        body.dark-mode .competition-logo-wrap {
+            background: #111b28;
+            border-color: #2a3a4f;
+        }
+        body.dark-mode .competition-logo-wrap.international-brand-wrap {
+            background: #f8fafc;
+            border-color: #64748b;
+        }
+        body.dark-mode .chart-note,
+        body.dark-mode .hero-role,
+        body.dark-mode .kpi-label,
+        body.dark-mode .debug-label { color: #93a8c4; }
+        body.dark-mode .row-first { background: #12243a; }
+        body.dark-mode .row-second { background: #122f25; }
+        body.dark-mode .ok { background: #103426; color: #8ee7b0; border-color: #1f5a44; }
+        body.dark-mode .error { background: #3a1718; color: #ffb4b7; border-color: #6b2b2d; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="topbar">
+            <div class="brand-wrap">
+                <img class="main-brand-logo" src="{{ url_for('static', filename='images/brand/cricklytics-main-logo.jpeg') }}" alt="Cricklytics logo" loading="eager" onerror="this.onerror=null; this.src='{{ main_logo_url|default('/static/images/brand/cricklytics-main-logo.jpeg', true) }}';" />
+                <h1 class="brand-title">Cricklytics: Ball-by-Ball Cricket Analytics and Prediction System</h1>
+            </div>
+            <div class="topbar-controls">
+                <div class="competition-logo-wrap {% if competition == 'international' %}international-brand-wrap{% endif %}" aria-label="Active competition logo">
+                {% if competition == 'ipl' %}
+                <img class="ipl-brand-logo" src="{{ url_for('static', filename='images/brand/ipl-official.png') }}" alt="IPL logo" loading="lazy" onerror="this.onerror=null; this.src='{{ ipl_logo_url|default('/static/images/brand/ipl-official.png', true) }}';" />
+                {% elif competition == 'international' %}
+                <img class="ipl-brand-logo international-brand-logo" src="{{ url_for('static', filename='images/brand/icc-t20wc-2026-trim.png') }}" alt="ICC Men's T20 World Cup 2026 logo" loading="lazy" onerror="this.onerror=null; this.src='{{ international_logo_url|default('/static/images/brand/icc-t20wc-2026-trim.png', true) }}';" />
+                {% endif %}
+                </div>
+                <form method="GET" class="competition-switch" aria-label="Competition selector">
+                    <button class="competition-pill {% if competition == 'international' %}active{% endif %}" type="submit" name="competition" value="international">International</button>
+                    <button class="competition-pill {% if competition == 'ipl' %}active{% endif %}" type="submit" name="competition" value="ipl">IPL</button>
+                </form>
+                <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">Dark Mode</button>
+            </div>
+        </div>
+        <div class="card" style="padding:10px 14px;">
+            <strong>Active Competition:</strong> {{ competition_label }}
+        </div>
+
+        {% if not artifacts_ready %}
+        <div class="card error">{{ competition_label }} artifacts missing. Run <strong>{{ train_command }}</strong> first.</div>
+        {% endif %}
+
+        {% if error %}
+        <div class="card error">{{ error }}</div>
+        {% endif %}
+
+        <div class="card" id="first-innings-card">
+            <h2>First Innings - Projected Score</h2>
+            <div class="matchup-hero" id="firstMatchupHero">
+                <div class="hero-side">
+                    <img id="firstBattingLogo" class="hero-logo" src="{{ team_logos.get(form_values.first_batting_team, '') }}" alt="First innings batting team logo" loading="lazy" onerror="this.style.visibility='hidden'; this.removeAttribute('src');" />
+                </div>
+                <div class="hero-center">
+                    <div class="hero-team">
+                        <div class="hero-role">Batting Team</div>
+                        <div id="firstBattingName" class="hero-name">{{ form_values.first_batting_team }}</div>
+                    </div>
+                    <div class="hero-vs">vs</div>
+                    <div class="hero-team right">
+                        <div class="hero-role">Bowling Team</div>
+                        <div id="firstBowlingName" class="hero-name">{{ form_values.first_bowling_team }}</div>
+                    </div>
+                </div>
+                <div class="hero-side">
+                    <img id="firstBowlingLogo" class="hero-logo" src="{{ team_logos.get(form_values.first_bowling_team, '') }}" alt="First innings bowling team logo" loading="lazy" onerror="this.style.visibility='hidden'; this.removeAttribute('src');" />
+                </div>
+            </div>
+            <form method="POST" class="grid">
+                <input type="hidden" name="mode" value="first" />
+                <input type="hidden" name="competition" value="{{ competition }}" />
+                <div>
+                    <label>First Innings Batting Team (Team 1)</label>
+                    <select name="first_batting_team" required>{% for t in teams %}<option value="{{ t }}" {% if form_values.first_batting_team == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+                </div>
+                <div>
+                    <label>First Innings Bowling Team (Team 2)</label>
+                    <select name="first_bowling_team" required>{% for t in teams %}<option value="{{ t }}" {% if form_values.first_bowling_team == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+                </div>
+                <div>
+                    <label>Venue</label>
+                    <select name="first_venue" required>{% for v in venues %}<option value="{{ v }}" {% if form_values.first_venue == v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+                </div>
+                <div><label>Current Score</label><input type="number" name="first_current_score" min="0" value="{{ form_values.first_current_score }}" required /></div>
+                <div><label>Wickets Lost</label><input type="number" name="first_wickets_lost" min="0" max="10" value="{{ form_values.first_wickets_lost }}" required /></div>
+                <div><label>Overs (e.g. 10.2)</label><input type="text" name="first_overs" value="{{ form_values.first_overs }}" required /></div>
+                <div class="full"><label>Runs in Last 5 Overs</label><input type="number" name="first_last_30_runs" min="0" value="{{ form_values.first_last_30_runs }}" required /></div>
+                <div class="full"><button type="submit">Predict Projected Score</button></div>
+            </form>
+            {% if first_prediction %}
+            <div class="ok" style="margin-top:10px;">
+                Projected Final Score: <strong>{{ first_prediction.projected_total }}</strong> |
+                Projected Target: <strong>{{ first_prediction.projected_target }}</strong>
+            </div>
+            <div class="ok" style="margin-top:10px;">
+                First Innings Confidence Band: <strong>{{ first_prediction.projection_low }}</strong> to <strong>{{ first_prediction.projection_high }}</strong>
+            </div>
+            {% set ch_colors = team_colors.get(first_prediction.projected_chasing_team, {'primary':'#0b7a5a','secondary':'#34d399'}) %}
+            {% set def_colors = team_colors.get(first_prediction.projected_defending_team, {'primary':'#334155','secondary':'#94a3b8'}) %}
+            {% set ch_bg = ch_colors.primary %}
+            {% set ch_accent = ch_colors.secondary %}
+            {% set def_bg = def_colors.primary %}
+            {% set def_accent = def_colors.secondary %}
+            {% if ch_bg|lower == def_bg|lower %}
+            {% set def_bg = def_colors.secondary %}
+            {% set def_accent = def_colors.primary %}
+            {% endif %}
+            {% set ch_text = '#ffffff' %}
+            {% set def_text = '#ffffff' %}
+            {% if ch_bg|lower in ['#ffffff', '#ffd700'] %}{% set ch_text = '#0f172a' %}{% endif %}
+            {% if def_bg|lower in ['#ffffff', '#ffd700'] %}{% set def_text = '#0f172a' %}{% endif %}
+            <div class="pillgrid" style="margin-top:10px;">
+                <div class="pill chase js-team-pill" data-primary="{{ ch_colors.primary }}" data-secondary="{{ ch_colors.secondary }}" style="background:{{ ch_bg }}; color:{{ ch_text }}; border-bottom:4px solid {{ ch_accent }};">Projected Chasing Team ({{ first_prediction.projected_chasing_team }}) Win % at Start<br />{{ first_prediction.chasing_win_at_start }}%</div>
+                <div class="pill defend js-team-pill" data-primary="{{ def_colors.primary }}" data-secondary="{{ def_colors.secondary }}" style="background:{{ def_bg }}; color:{{ def_text }}; border-bottom:4px solid {{ def_accent }};">Projected Defending Team ({{ first_prediction.projected_defending_team }}) Win % at Start<br />{{ first_prediction.defending_win_at_start }}%</div>
+            </div>
+            {% endif %}
+            {% if show_analytics and chart_images and chart_images.first_innings_panel %}
+            <div style="margin-top:12px;">
+                <div id="firstInningsPlotly" class="plotly-canvas"></div>
+                <img id="firstInningsFallback" class="chart-image" alt="First innings analytics chart" src="data:image/png;base64,{{ chart_images.first_innings_panel }}" style="display:none;" />
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card" id="second-innings-card">
+            <h2>Second Innings - Win Probability</h2>
+            <div class="matchup-hero" id="secondMatchupHero">
+                <div class="hero-side">
+                    <img id="secondBattingLogo" class="hero-logo" src="{{ team_logos.get(form_values.second_batting_team, '') }}" alt="Second innings chasing team logo" loading="lazy" onerror="this.style.visibility='hidden'; this.removeAttribute('src');" />
+                </div>
+                <div class="hero-center">
+                    <div class="hero-team">
+                        <div class="hero-role">Chasing Team</div>
+                        <div id="secondBattingName" class="hero-name">{{ form_values.second_batting_team }}</div>
+                    </div>
+                    <div class="hero-vs">vs</div>
+                    <div class="hero-team right">
+                        <div class="hero-role">Defending Team</div>
+                        <div id="secondBowlingName" class="hero-name">{{ form_values.second_bowling_team }}</div>
+                    </div>
+                </div>
+                <div class="hero-side">
+                    <img id="secondBowlingLogo" class="hero-logo" src="{{ team_logos.get(form_values.second_bowling_team, '') }}" alt="Second innings defending team logo" loading="lazy" onerror="this.style.visibility='hidden'; this.removeAttribute('src');" />
+                </div>
+            </div>
+            <form method="POST" class="grid">
+                <input type="hidden" name="mode" value="second" />
+                <input type="hidden" name="competition" value="{{ competition }}" />
+                <input type="hidden" name="context_first_batting_team" id="context_first_batting_team" value="{{ form_values.first_batting_team }}" />
+                <input type="hidden" name="context_first_bowling_team" id="context_first_bowling_team" value="{{ form_values.first_bowling_team }}" />
+                <input type="hidden" name="context_first_venue" id="context_first_venue" value="{{ form_values.first_venue }}" />
+                <div>
+                    <label>Chasing Team (should be first innings bowling team)</label>
+                    <select name="second_batting_team" id="second_batting_team" required>{% for t in teams %}<option value="{{ t }}" {% if form_values.second_batting_team == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+                </div>
+                <div>
+                    <label>Defending Team (should be first innings batting team)</label>
+                    <select name="second_bowling_team" id="second_bowling_team" required>{% for t in teams %}<option value="{{ t }}" {% if form_values.second_bowling_team == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+                </div>
+                <div>
+                    <label>Venue</label>
+                    <select name="second_venue" id="second_venue" required>{% for v in venues %}<option value="{{ v }}" {% if form_values.second_venue == v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+                </div>
+                <div><label>Target</label><input type="number" name="second_target" min="1" value="{{ form_values.second_target }}" required /></div>
+                <div><label>Current Score</label><input type="number" name="second_current_score" min="0" value="{{ form_values.second_current_score }}" required /></div>
+                <div><label>Wickets Lost</label><input type="number" name="second_wickets_lost" min="0" max="10" value="{{ form_values.second_wickets_lost }}" required /></div>
+                <div><label>Overs</label><input type="text" name="second_overs" value="{{ form_values.second_overs }}" required /></div>
+                <div><label>Runs in Last 5 Overs</label><input type="number" name="second_last_30_runs" min="0" value="{{ form_values.second_last_30_runs }}" required /></div>
+                <div class="full"><button type="submit">Predict Win Probability</button></div>
+            </form>
+            {% if second_prediction %}
+            {% set chase_colors = team_colors.get(second_prediction.chasing_team, {'primary':'#0b7a5a','secondary':'#34d399'}) %}
+            {% set defend_colors = team_colors.get(second_prediction.defending_team, {'primary':'#334155','secondary':'#94a3b8'}) %}
+            {% set chase_bg = chase_colors.primary %}
+            {% set chase_accent = chase_colors.secondary %}
+            {% set defend_bg = defend_colors.primary %}
+            {% set defend_accent = defend_colors.secondary %}
+            {% if chase_bg|lower == defend_bg|lower %}
+            {% set defend_bg = defend_colors.secondary %}
+            {% set defend_accent = defend_colors.primary %}
+            {% endif %}
+            {% set chase_text = '#ffffff' %}
+            {% set defend_text = '#ffffff' %}
+            {% if chase_bg|lower in ['#ffffff', '#ffd700'] %}{% set chase_text = '#0f172a' %}{% endif %}
+            {% if defend_bg|lower in ['#ffffff', '#ffd700'] %}{% set defend_text = '#0f172a' %}{% endif %}
+            <div class="pillgrid" style="margin-top:10px;">
+                <div class="pill chase js-team-pill" data-primary="{{ chase_colors.primary }}" data-secondary="{{ chase_colors.secondary }}" style="background:{{ chase_bg }}; color:{{ chase_text }}; border-bottom:4px solid {{ chase_accent }};">{{ second_prediction.chasing_team }} (Chasing) Win %<br />{{ second_prediction.chasing_win_probability }}%</div>
+                <div class="pill defend js-team-pill" data-primary="{{ defend_colors.primary }}" data-secondary="{{ defend_colors.secondary }}" style="background:{{ defend_bg }}; color:{{ defend_text }}; border-bottom:4px solid {{ defend_accent }};">{{ second_prediction.defending_team }} (Defending) Win %<br />{{ second_prediction.defending_win_probability }}%</div>
+            </div>
+            <div class="ok" style="margin-top:10px;">
+                {{ second_prediction.chasing_team }} Target: <strong>{{ second_prediction.live_target }}</strong> |
+                {{ second_prediction.chasing_team }} Projected Chase Total: <strong>{{ second_prediction.projected_chase_total }}</strong>
+            </div>
+            <div class="ok" style="margin-top:10px;">
+                {{ second_prediction.chasing_team }} Chase Confidence Band: <strong>{{ second_prediction.projection_low }}</strong> to <strong>{{ second_prediction.projection_high }}</strong>
+            </div>
+            {% endif %}
+            {% if show_analytics and chart_images and chart_images.second_innings_panel %}
+            <div style="margin-top:12px;">
+                <div id="secondInningsPlotly" class="plotly-canvas"></div>
+                <img id="secondInningsFallback" class="chart-image" alt="Second innings analytics chart" src="data:image/png;base64,{{ chart_images.second_innings_panel }}" style="display:none;" />
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card" id="combined-card">
+            <h2>Combined Match View</h2>
+            {% if not show_analytics %}
+            <div class="ok" style="margin-top:10px;">Submit either First Innings or Second Innings prediction to load full analytics and visualizations.</div>
+            {% endif %}
+            {% if show_analytics %}
+            {% if first_prediction %}
+            <div class="ok" style="margin-top:10px;">
+                First Innings Story: {{ first_prediction.batting_team }} projected score <strong>{{ first_prediction.projected_total }}</strong>,
+                projected target for {{ first_prediction.projected_chasing_team }} is <strong>{{ first_prediction.projected_target }}</strong>,
+                and {{ first_prediction.projected_defending_team }} defend chance at chase start is <strong>{{ first_prediction.defending_win_at_start }}%</strong>.
+            </div>
+            {% endif %}
+            {% if second_prediction %}
+            <div class="ok" style="margin-top:10px;">
+                Second Innings Story: {{ second_prediction.chasing_team }} chase win chance <strong>{{ second_prediction.chasing_win_probability }}%</strong>,
+                projected chase total <strong>{{ second_prediction.projected_chase_total }}</strong>
+                against target <strong>{{ second_prediction.live_target }}</strong> set by {{ second_prediction.defending_team }}.
+            </div>
+            {% endif %}
+            {% if not first_prediction and not second_prediction %}
+            <div class="ok" style="margin-top:10px;">Run either First Innings or Second Innings prediction above to see combined live story.</div>
+            {% endif %}
+
+            {% if chart_data and chart_data.summary %}
+            <table class="summary-table">
+                <tr>
+                    <th>Innings</th>
+                    <th>Batting Team</th>
+                    <th>Bowling Team</th>
+                    <th>Score Now</th>
+                    <th>Wickets Now</th>
+                    <th>Overs Now</th>
+                    <th>Projected Score</th>
+                    <th>Target</th>
+                </tr>
+                <tr class="row-first">
+                    <td>First Innings</td>
+                    <td>
+                        <span class="team-cell">
+                            {% if team_logos.get(chart_data.summary.first.batting_team) %}
+                            <img class="team-logo" src="{{ team_logos.get(chart_data.summary.first.batting_team) }}" alt="{{ chart_data.summary.first.batting_team }} logo" loading="lazy" />
+                            {% else %}
+                            <span class="team-logo-fallback">🏳️</span>
+                            {% endif %}
+                            <span>{{ chart_data.summary.first.batting_team }}</span>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="team-cell">
+                            {% if team_logos.get(chart_data.summary.first.bowling_team) %}
+                            <img class="team-logo" src="{{ team_logos.get(chart_data.summary.first.bowling_team) }}" alt="{{ chart_data.summary.first.bowling_team }} logo" loading="lazy" />
+                            {% else %}
+                            <span class="team-logo-fallback">🏳️</span>
+                            {% endif %}
+                            <span>{{ chart_data.summary.first.bowling_team }}</span>
+                        </span>
+                    </td>
+                    <td>{{ chart_data.summary.first.score_now }}</td>
+                    <td>{{ chart_data.summary.first.wickets_now }}</td>
+                    <td>{{ chart_data.summary.first.overs_now }}</td>
+                    <td>{{ chart_data.summary.first.projected_score }}</td>
+                    <td>-</td>
+                </tr>
+                <tr class="row-second">
+                    <td>Second Innings</td>
+                    <td>
+                        <span class="team-cell">
+                            {% if team_logos.get(chart_data.summary.second.batting_team) %}
+                            <img class="team-logo" src="{{ team_logos.get(chart_data.summary.second.batting_team) }}" alt="{{ chart_data.summary.second.batting_team }} logo" loading="lazy" />
+                            {% else %}
+                            <span class="team-logo-fallback">🏳️</span>
+                            {% endif %}
+                            <span>{{ chart_data.summary.second.batting_team }}</span>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="team-cell">
+                            {% if team_logos.get(chart_data.summary.second.bowling_team) %}
+                            <img class="team-logo" src="{{ team_logos.get(chart_data.summary.second.bowling_team) }}" alt="{{ chart_data.summary.second.bowling_team }} logo" loading="lazy" />
+                            {% else %}
+                            <span class="team-logo-fallback">🏳️</span>
+                            {% endif %}
+                            <span>{{ chart_data.summary.second.bowling_team }}</span>
+                        </span>
+                    </td>
+                    <td>{{ chart_data.summary.second.score_now }}</td>
+                    <td>{{ chart_data.summary.second.wickets_now }}</td>
+                    <td>{{ chart_data.summary.second.overs_now }}</td>
+                    <td>{% if chart_data.summary.second.projected_score is not none %}{{ chart_data.summary.second.projected_score }}{% else %}-{% endif %}</td>
+                    <td>{{ chart_data.summary.second.target }}</td>
+                </tr>
+            </table>
+
+            <div class="kpi-strip">
+                <div class="kpi-card">
+                    <div class="kpi-label">1st Innings Score / Wkts</div>
+                    <div class="kpi-value">{{ chart_data.summary.first.score_now }} / {{ chart_data.summary.first.wickets_now }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">2nd Innings Score / Wkts</div>
+                    <div class="kpi-value">{{ chart_data.summary.second.score_now }} / {{ chart_data.summary.second.wickets_now }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Target</div>
+                    <div class="kpi-value">{{ chart_data.summary.second.target }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Chasing Win %</div>
+                    <div class="kpi-value">{{ chart_data.state.chasing_wp_now }}%</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="chart-grid" id="combined-analytics-charts">
+                <div class="chart-card">
+                    <p class="chart-title">1) Score Progression (Most Important)</p>
+                    {% if chart_images %}
+                    <div id="scoreProgressionPlotly" class="plotly-canvas small"></div>
+                    <img id="scoreProgressionFallback" class="chart-image" alt="Score progression chart" src="data:image/png;base64,{{ chart_images.score_progression }}" style="display:none;" />
+                    {% else %}
+                    <div class="error">Chart generation unavailable.</div>
+                    {% endif %}
+                    <div class="chart-note">Over-by-over progression for first innings, chase innings, and live target line.</div>
+                </div>
+                <div class="chart-card">
+                    <p class="chart-title">2) Run Rate vs Required Run Rate</p>
+                    {% if chart_images and chart_data and chart_data.state.second_started %}
+                    <div id="runRatePlotly" class="plotly-canvas small"></div>
+                    <img id="runRateFallback" class="chart-image" alt="Run rate vs required run rate chart" src="data:image/png;base64,{{ chart_images.run_rate }}" style="display:none;" />
+                    {% else %}
+                    <div class="ok">Second innings has not started yet. Run Rate vs Required RR will appear after chase begins.</div>
+                    {% endif %}
+                    <div class="chart-note">Chasing current run-rate trajectory against required run-rate trajectory.</div>
+                </div>
+                <div class="chart-card">
+                    <p class="chart-title">3) Win Probability Graph (Most Advanced)</p>
+                    {% if chart_images %}
+                    <div id="winProbabilityBroadcast" class="win-broadcast"></div>
+                    <img id="winProbabilityFallback" class="chart-image" alt="Win probability chart" src="data:image/png;base64,{{ chart_images.win_probability }}" style="display:none; margin-top:8px;" />
+                    {% else %}
+                    <div class="error">Chart generation unavailable.</div>
+                    {% endif %}
+                    <div class="chart-note">Broadcast-style live win split for chasing vs defending teams.</div>
+                </div>
+                <div class="chart-card">
+                    <p class="chart-title">4) Wickets Timeline</p>
+                    {% if chart_images and chart_data and chart_data.state.second_started %}
+                    <div id="wicketsPlotly" class="plotly-canvas small"></div>
+                    <img id="wicketsFallback" class="chart-image" alt="Wickets timeline chart" src="data:image/png;base64,{{ chart_images.wickets }}" style="display:none;" />
+                    {% else %}
+                    <div class="ok">Second innings has not started yet. Wickets timeline will appear after chase begins.</div>
+                    {% endif %}
+                    <div class="chart-note">True wickets timeline (cumulative wickets lost) for both innings.</div>
+                </div>
+
+                <div class="chart-card">
+                    <p class="chart-title">5) Match Momentum (Runs Per Over)</p>
+                    {% if chart_data and chart_data.state.second_started %}
+                    <div id="momentumPlotly" class="plotly-canvas small"></div>
+                    {% else %}
+                    <div class="ok">Second innings has not started yet. Momentum comparison appears once chase starts.</div>
+                    {% endif %}
+                    <div class="chart-note">Over-wise run bursts for both innings to identify momentum swings.</div>
+                </div>
+
+                <div class="chart-card">
+                    <p class="chart-title">6) Ball-by-Ball Score Progression</p>
+                    {% if chart_data and chart_data.state.second_started %}
+                    <div id="ballScorePlotly" class="plotly-canvas small"></div>
+                    {% else %}
+                    <div class="ok">Second innings has not started yet. Ball-by-ball comparison appears once chase starts.</div>
+                    {% endif %}
+                    <div class="chart-note">Fine-grain progression over 120 balls for analyst-style trend reading.</div>
+                </div>
+
+                <div class="chart-card">
+                    <p class="chart-title">7) Ball-wise CRR vs RRR</p>
+                    {% if chart_data and chart_data.state.second_started %}
+                    <div id="ballRrPlotly" class="plotly-canvas small"></div>
+                    {% else %}
+                    <div class="ok">Second innings has not started yet. Ball-wise CRR vs RRR appears once chase starts.</div>
+                    {% endif %}
+                    <div class="chart-note">Current and required run rates at ball level for pressure analysis.</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if debug_values %}
+        <div class="card">
+            <strong>Debug (Live Context)</strong>
+            <div class="debug-grid">
+                <div class="debug-pill"><div class="debug-label">Phase</div><div class="debug-value">{{ debug_values.innings_phase }}</div></div>
+                <div class="debug-pill"><div class="debug-label">Balls Bowled</div><div class="debug-value">{{ debug_values.balls_bowled }}</div></div>
+                <div class="debug-pill"><div class="debug-label">Balls Remaining</div><div class="debug-value">{{ debug_values.balls_remaining }}</div></div>
+                <div class="debug-pill"><div class="debug-label">CRR</div><div class="debug-value">{{ debug_values.current_run_rate }}</div></div>
+                {% if debug_values.required_run_rate is defined %}
+                <div class="debug-pill"><div class="debug-label">RRR</div><div class="debug-value">{{ debug_values.required_run_rate }}</div></div>
+                {% endif %}
+                <div class="debug-pill"><div class="debug-label">Pressure</div><div class="debug-value">{{ debug_values.pressure_index }}</div></div>
+                {% if debug_values.model_win_probability is defined %}
+                <div class="debug-pill"><div class="debug-label">Model Win %</div><div class="debug-value">{{ debug_values.model_win_probability }}%</div></div>
+                <div class="debug-pill"><div class="debug-label">Projection Win %</div><div class="debug-value">{{ debug_values.projection_win_probability }}%</div></div>
+                <div class="debug-pill"><div class="debug-label">Simulation Win %</div><div class="debug-value">{{ debug_values.simulation_win_probability }}%</div></div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <script>
+        (function () {
+            const rootBody = document.body;
+            const themeToggleBtn = document.getElementById('themeToggle');
+            const THEME_KEY = 'cricklytics-theme';
+
+            function applyTheme(mode) {
+                const dark = mode === 'dark';
+                rootBody.classList.toggle('dark-mode', dark);
+                if (themeToggleBtn) {
+                    themeToggleBtn.textContent = dark ? 'Light Mode' : 'Dark Mode';
+                }
+                if (typeof window.applyPlotThemeToRenderedCharts === 'function') {
+                    window.applyPlotThemeToRenderedCharts();
+                }
+            }
+
+            function initTheme() {
+                const stored = localStorage.getItem(THEME_KEY);
+                if (stored === 'dark' || stored === 'light') {
+                    applyTheme(stored);
+                    return;
+                }
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(prefersDark ? 'dark' : 'light');
+            }
+
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', function () {
+                    const nextMode = rootBody.classList.contains('dark-mode') ? 'light' : 'dark';
+                    localStorage.setItem(THEME_KEY, nextMode);
+                    applyTheme(nextMode);
+                });
+            }
+
+            initTheme();
+
+            const firstBat = document.querySelector('select[name="first_batting_team"]');
+            const firstBowl = document.querySelector('select[name="first_bowling_team"]');
+            const firstVenue = document.querySelector('select[name="first_venue"]');
+
+            const secondBat = document.getElementById('second_batting_team');
+            const secondBowl = document.getElementById('second_bowling_team');
+            const secondVenue = document.getElementById('second_venue');
+            const teamLogoMap = {{ team_logos|tojson if team_logos else '{}' }};
+
+            const ctxFirstBat = document.getElementById('context_first_batting_team');
+            const ctxFirstBowl = document.getElementById('context_first_bowling_team');
+            const ctxFirstVenue = document.getElementById('context_first_venue');
+
+            function applyTeamLogo(imageEl, teamCode) {
+                if (!imageEl) return;
+                const code = String(teamCode || '').toUpperCase();
+                const logo = teamLogoMap[code] || '';
+                if (logo) {
+                    imageEl.onerror = function () {
+                        this.style.visibility = 'hidden';
+                        this.removeAttribute('src');
+                    };
+                    imageEl.onload = function () {
+                        this.style.visibility = 'visible';
+                    };
+                    imageEl.src = logo;
+                    imageEl.style.visibility = 'visible';
+                } else {
+                    imageEl.removeAttribute('src');
+                    imageEl.style.visibility = 'hidden';
+                }
+            }
+
+            function updateMatchupHeroes() {
+                const firstBatName = document.getElementById('firstBattingName');
+                const firstBowlName = document.getElementById('firstBowlingName');
+                const firstBatLogo = document.getElementById('firstBattingLogo');
+                const firstBowlLogo = document.getElementById('firstBowlingLogo');
+
+                if (firstBat && firstBatName) firstBatName.textContent = firstBat.value || '-';
+                if (firstBowl && firstBowlName) firstBowlName.textContent = firstBowl.value || '-';
+                applyTeamLogo(firstBatLogo, firstBat ? firstBat.value : '');
+                applyTeamLogo(firstBowlLogo, firstBowl ? firstBowl.value : '');
+
+                const secondBatName = document.getElementById('secondBattingName');
+                const secondBowlName = document.getElementById('secondBowlingName');
+                const secondBatLogo = document.getElementById('secondBattingLogo');
+                const secondBowlLogo = document.getElementById('secondBowlingLogo');
+
+                if (secondBat && secondBatName) secondBatName.textContent = secondBat.value || '-';
+                if (secondBowl && secondBowlName) secondBowlName.textContent = secondBowl.value || '-';
+                applyTeamLogo(secondBatLogo, secondBat ? secondBat.value : '');
+                applyTeamLogo(secondBowlLogo, secondBowl ? secondBowl.value : '');
+            }
+
+            function syncSecondFromFirst() {
+                if (!firstBat || !firstBowl || !firstVenue || !secondBat || !secondBowl || !secondVenue) {
+                    return;
+                }
+                secondBat.value = firstBowl.value;
+                secondBowl.value = firstBat.value;
+                secondVenue.value = firstVenue.value;
+                if (ctxFirstBat) ctxFirstBat.value = firstBat.value;
+                if (ctxFirstBowl) ctxFirstBowl.value = firstBowl.value;
+                if (ctxFirstVenue) ctxFirstVenue.value = firstVenue.value;
+                updateMatchupHeroes();
+            }
+
+            function hexToRgb(hex) {
+                if (!hex) return null;
+                const raw = String(hex).trim().replace('#', '');
+                const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+                if (!/^[0-9a-fA-F]{6}$/.test(full)) return null;
+                const n = parseInt(full, 16);
+                return {
+                    r: (n >> 16) & 255,
+                    g: (n >> 8) & 255,
+                    b: n & 255,
+                };
+            }
+
+            function colorDistance(a, b) {
+                if (!a || !b) return 999;
+                const dr = a.r - b.r;
+                const dg = a.g - b.g;
+                const db = a.b - b.b;
+                return Math.sqrt((dr * dr) + (dg * dg) + (db * db));
+            }
+
+            function pickTextColor(hex) {
+                const rgb = hexToRgb(hex);
+                if (!rgb) return '#ffffff';
+                const luminance = ((0.299 * rgb.r) + (0.587 * rgb.g) + (0.114 * rgb.b)) / 255;
+                return luminance > 0.62 ? '#0f172a' : '#ffffff';
+            }
+
+            function applyTeamPillColorFix() {
+                const grids = document.querySelectorAll('.pillgrid');
+                for (const grid of grids) {
+                    const pills = grid.querySelectorAll('.js-team-pill');
+                    if (pills.length !== 2) continue;
+
+                    const first = pills[0];
+                    const second = pills[1];
+
+                    const firstPrimary = first.dataset.primary || '';
+                    const firstSecondary = first.dataset.secondary || '';
+                    const secondPrimary = second.dataset.primary || '';
+                    const secondSecondary = second.dataset.secondary || '';
+
+                    let firstBg = firstPrimary;
+                    let firstAccent = firstSecondary;
+                    let secondBg = secondPrimary;
+                    let secondAccent = secondSecondary;
+
+                    const dist = colorDistance(hexToRgb(firstPrimary), hexToRgb(secondPrimary));
+                    if (dist < 90) {
+                        secondBg = secondSecondary || secondPrimary;
+                        secondAccent = secondPrimary || secondSecondary;
+                    }
+
+                    first.style.background = firstBg;
+                    first.style.borderBottom = `4px solid ${firstAccent || firstBg}`;
+                    first.style.color = pickTextColor(firstBg);
+
+                    second.style.background = secondBg;
+                    second.style.borderBottom = `4px solid ${secondAccent || secondBg}`;
+                    second.style.color = pickTextColor(secondBg);
+                }
+            }
+
+            function preventSameTeamSelection(primarySelect, secondarySelect) {
+                if (!primarySelect || !secondarySelect) {
+                    return;
+                }
+                if (primarySelect.value === secondarySelect.value && secondarySelect.options.length > 1) {
+                    for (const opt of secondarySelect.options) {
+                        if (opt.value !== primarySelect.value) {
+                            secondarySelect.value = opt.value;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (firstBat && firstBowl && firstVenue) {
+                firstBat.addEventListener('change', function () {
+                    preventSameTeamSelection(firstBat, firstBowl);
+                    syncSecondFromFirst();
+                    updateMatchupHeroes();
+                });
+                firstBowl.addEventListener('change', function () {
+                    preventSameTeamSelection(firstBowl, firstBat);
+                    syncSecondFromFirst();
+                    updateMatchupHeroes();
+                });
+                firstVenue.addEventListener('change', syncSecondFromFirst);
+                syncSecondFromFirst();
+            }
+
+            if (secondBat) {
+                secondBat.addEventListener('change', function () {
+                    preventSameTeamSelection(secondBat, secondBowl);
+                    updateMatchupHeroes();
+                });
+            }
+
+            if (secondBowl) {
+                secondBowl.addEventListener('change', function () {
+                    preventSameTeamSelection(secondBowl, secondBat);
+                    updateMatchupHeroes();
+                });
+            }
+
+            applyTeamPillColorFix();
+            updateMatchupHeroes();
+
+            {% if did_submit %}
+            const activeMode = {{ mode|tojson }};
+            if (activeMode === 'second') {
+                const sec = document.getElementById('second-innings-card');
+                if (sec) sec.scrollIntoView({behavior: 'smooth', block: 'start'});
+            } else if (activeMode === 'first') {
+                const fst = document.getElementById('first-innings-card');
+                if (fst) fst.scrollIntoView({behavior: 'smooth', block: 'start'});
+            }
+            {% endif %}
+
+            const chartData = {{ chart_data|tojson if chart_data else 'null' }};
+            if (!chartData || typeof Plotly === 'undefined') {
+                return;
+            }
+
+            const teamPalette = {{ team_colors|tojson if team_colors else '{}' }};
+
+            function palette(code) {
+                return teamPalette[code] || { primary: '#2563eb', secondary: '#60a5fa', dark: '#1e3a8a' };
+            }
+
+            function rgbToHex(rgb) {
+                if (!rgb) return '#60a5fa';
+                const toHex = (v) => {
+                    const clamped = Math.max(0, Math.min(255, Math.round(v)));
+                    return clamped.toString(16).padStart(2, '0');
+                };
+                return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`;
+            }
+
+            function mixHex(c1, c2, ratio) {
+                const a = hexToRgb(c1);
+                const b = hexToRgb(c2);
+                if (!a || !b) return c1 || '#60a5fa';
+                const t = Math.max(0, Math.min(1, ratio));
+                return rgbToHex({
+                    r: (a.r * (1 - t)) + (b.r * t),
+                    g: (a.g * (1 - t)) + (b.g * t),
+                    b: (a.b * (1 - t)) + (b.b * t),
+                });
+            }
+
+            function luminance(hex) {
+                const rgb = hexToRgb(hex);
+                if (!rgb) return 0.5;
+                return ((0.299 * rgb.r) + (0.587 * rgb.g) + (0.114 * rgb.b)) / 255;
+            }
+
+            function chartSafeColor(hex) {
+                const base = hex || '#60a5fa';
+                const luma = luminance(base);
+
+                // Keep colors readable on both light and dark chart backgrounds.
+                if (luma < 0.18) {
+                    return mixHex(base, '#ffffff', 0.35);
+                }
+                if (luma > 0.78) {
+                    return mixHex(base, '#0f172a', 0.45);
+                }
+                return base;
+            }
+
+            function paletteForCharts(code) {
+                const p = palette(code);
+                return {
+                    primary: chartSafeColor(p.primary),
+                    secondary: chartSafeColor(p.secondary),
+                    dark: chartSafeColor(p.dark || p.primary),
+                };
+            }
+
+            const teamFlags = {
+                IND: '🇮🇳', PAK: '🇵🇰', AUS: '🇦🇺', ENG: '🏴', NZ: '🇳🇿',
+                BAN: '🇧🇩', SL: '🇱🇰', WI: '🇦🇬', RSA: '🇿🇦', SA: '🇿🇦',
+                AFG: '🇦🇫', NED: '🇳🇱', NEP: '🇳🇵', CAN: '🇨🇦', IRE: '🇮🇪',
+                SCO: '🏴', USA: '🇺🇸', UGA: '🇺🇬', OMAN: '🇴🇲', PNG: '🇵🇬', NAM: '🇳🇦',
+                HK: '🇭🇰', UAE: '🇦🇪', ZIM: '🇿🇼'
+            };
+
+            function isDarkTheme() {
+                return document.body.classList.contains('dark-mode');
+            }
+
+            function getPlotTheme() {
+                if (isDarkTheme()) {
+                    return {
+                        paperBg: '#0f1724',
+                        plotBg: '#101b2a',
+                        fontColor: '#dbe7f5',
+                        axisColor: '#9fb3cc',
+                        gridColor: '#2a3d55',
+                    };
+                }
+                return {
+                    paperBg: '#ffffff',
+                    plotBg: '#f8fafc',
+                    fontColor: '#1f2937',
+                    axisColor: '#475467',
+                    gridColor: '#d9e3ef',
+                };
+            }
+
+            function withPlotTheme(layout) {
+                const tTheme = getPlotTheme();
+                const themed = {
+                    ...layout,
+                    paper_bgcolor: tTheme.paperBg,
+                    plot_bgcolor: tTheme.plotBg,
+                    font: {
+                        ...(layout.font || {}),
+                        color: tTheme.fontColor,
+                    },
+                };
+
+                const axisKeys = ['xaxis', 'yaxis', 'yaxis2'];
+                for (const axisKey of axisKeys) {
+                    if (themed[axisKey]) {
+                        themed[axisKey] = {
+                            ...themed[axisKey],
+                            color: tTheme.axisColor,
+                            gridcolor: tTheme.gridColor,
+                            zerolinecolor: tTheme.gridColor,
+                            linecolor: tTheme.axisColor,
+                            tickfont: {
+                                ...(themed[axisKey].tickfont || {}),
+                                color: tTheme.axisColor,
+                            },
+                            titlefont: {
+                                ...(themed[axisKey].titlefont || {}),
+                                color: tTheme.axisColor,
+                            },
+                        };
+                    }
+                }
+
+                return themed;
+            }
+
+            function legendName(teamCode) {
+                return `${teamFlags[teamCode] || '🏏'} ${teamCode}`;
+            }
+
+            function segmented(curve, splitIdx) {
+                return curve.map((v, i) => (i <= splitIdx ? v : null));
+            }
+
+            function segmentedProj(curve, splitIdx) {
+                return curve.map((v, i) => (i > splitIdx ? v : null));
+            }
+
+            function wicketMarkerSeries(curve, splitIdx) {
+                const x = [];
+                const y = [];
+                for (let i = 1; i < curve.length; i++) {
+                    if (typeof splitIdx === 'number' && i > splitIdx) {
+                        break;
+                    }
+                    const d = Number(curve[i] || 0) - Number(curve[i - 1] || 0);
+                    if (d >= 0.45) {
+                        x.push(i);
+                        y.push(curve[i]);
+                    }
+                }
+                return {x, y};
+            }
+
+            function lockAxes(layout) {
+                const out = {...layout, dragmode: false, hovermode: 'x unified'};
+                if (out.xaxis) out.xaxis = {...out.xaxis, fixedrange: true};
+                if (out.yaxis) out.yaxis = {...out.yaxis, fixedrange: true};
+                if (out.yaxis2) out.yaxis2 = {...out.yaxis2, fixedrange: true};
+                return out;
+            }
+
+            function renderOrFallback(id, fallbackId, data, layout) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const cfg = {
+                    responsive: true,
+                    displayModeBar: false,
+                    scrollZoom: false,
+                    doubleClick: false,
+                    editable: false,
+                    showTips: false,
+                };
+                Plotly.newPlot(el, data, withPlotTheme(lockAxes(layout)), cfg)
+                    .catch(() => {
+                        el.style.display = 'none';
+                        const fb = document.getElementById(fallbackId);
+                        if (fb) fb.style.display = 'block';
+                    });
+            }
+
+            function applyPlotThemeToRenderedCharts() {
+                if (typeof Plotly === 'undefined') return;
+                const tTheme = getPlotTheme();
+                const relayoutPayload = {
+                    paper_bgcolor: tTheme.paperBg,
+                    plot_bgcolor: tTheme.plotBg,
+                    'font.color': tTheme.fontColor,
+                    'xaxis.color': tTheme.axisColor,
+                    'xaxis.gridcolor': tTheme.gridColor,
+                    'xaxis.zerolinecolor': tTheme.gridColor,
+                    'yaxis.color': tTheme.axisColor,
+                    'yaxis.gridcolor': tTheme.gridColor,
+                    'yaxis.zerolinecolor': tTheme.gridColor,
+                    'yaxis2.color': tTheme.axisColor,
+                    'yaxis2.gridcolor': tTheme.gridColor,
+                    'yaxis2.zerolinecolor': tTheme.gridColor,
+                };
+
+                const chartIds = [
+                    'firstInningsPlotly',
+                    'secondInningsPlotly',
+                    'scoreProgressionPlotly',
+                    'runRatePlotly',
+                    'wicketsPlotly',
+                    'momentumPlotly',
+                    'ballScorePlotly',
+                    'ballRrPlotly',
+                ];
+
+                for (const id of chartIds) {
+                    const el = document.getElementById(id);
+                    if (!el || !el.data) continue;
+                    Plotly.relayout(el, relayoutPayload).catch(() => {});
+                }
+            }
+
+            window.applyPlotThemeToRenderedCharts = applyPlotThemeToRenderedCharts;
+
+            const overs = chartData.overs;
+            const firstIdx = chartData.state.first_over_idx;
+            const secondIdx = chartData.state.second_over_idx;
+            const t = chartData.teams;
+            const secondStarted = !!chartData.state.second_started;
+            const c1 = paletteForCharts(t.first_batting);
+            const c2 = paletteForCharts(t.second_batting);
+            const c2b = paletteForCharts(t.second_bowling);
+            const wk1 = wicketMarkerSeries(chartData.wickets.first, firstIdx);
+            const wk2 = wicketMarkerSeries(chartData.wickets.second, secondIdx);
+            const firstOversNow = Number(chartData.summary.first.overs_now || 0);
+            const firstWkNow = Number(chartData.summary.first.wickets_now || 0);
+            const secondOversNow = Number(chartData.summary.second.overs_now || 0);
+            const secondWkNow = Number(chartData.summary.second.wickets_now || 0);
+            const teamLogos = {{ team_logos|tojson if team_logos else '{}' }};
+
+            const commonLayout = {
+                paper_bgcolor: '#ffffff',
+                plot_bgcolor: '#f8fafc',
+                margin: {l: 45, r: 25, t: 30, b: 35},
+                font: {family: 'Segoe UI, sans-serif', size: 11, color: '#1f2937'}
+            };
+
+            const overRuns1 = chartData.score_progression.first.map((v, i, arr) => i === 0 ? 0 : Math.max(0, v - arr[i - 1]));
+            const overRuns2 = chartData.score_progression.second.map((v, i, arr) => i === 0 ? 0 : Math.max(0, v - arr[i - 1]));
+
+            const balls = Array.from({length: 121}, (_, i) => i);
+            function toBallCurve(overCurve) {
+                return balls.map((b) => {
+                    const ov = b / 6;
+                    const lo = Math.floor(ov);
+                    const hi = Math.min(20, Math.ceil(ov));
+                    if (lo === hi) return overCurve[lo];
+                    const w = ov - lo;
+                    return ((1 - w) * overCurve[lo]) + (w * overCurve[hi]);
+                });
+            }
+
+            const ballScore1 = toBallCurve(chartData.score_progression.first);
+            const ballScore2 = toBallCurve(chartData.score_progression.second);
+            const ballTarget = toBallCurve(chartData.score_progression.target);
+            const ballCrr = balls.map((b) => b === 0 ? 0 : (ballScore2[b] * 6) / b);
+            const ballRrr = balls.map((b) => {
+                const ballsRem = 120 - b;
+                if (ballsRem <= 0) return 0;
+                return Math.max(0, ((ballTarget[b] - ballScore2[b]) * 6) / ballsRem);
+            });
+
+            renderOrFallback('firstInningsPlotly', 'firstInningsFallback', [
+                {x: overs, y: segmented(chartData.score_progression.first, firstIdx), mode: 'lines', name: legendName(t.first_batting) + ' Score Actual', line: {color: c1.primary, width: 3}, hovertemplate: 'Over %{x}<br>Runs %{y:.1f}<extra></extra>'},
+                {x: overs, y: segmentedProj(chartData.score_progression.first, firstIdx), mode: 'lines', name: legendName(t.first_batting) + ' Score Proj', line: {color: c1.secondary, width: 2, dash: 'dash'}, hovertemplate: 'Over %{x}<br>Proj Runs %{y:.1f}<extra></extra>'},
+                {x: overs, y: segmented(chartData.wickets.first, firstIdx), mode: 'lines', name: legendName(t.first_batting) + ' Wkts', yaxis: 'y2', line: {color: c1.dark, width: 2, shape: 'hv'}, hovertemplate: 'Over %{x}<br>Wkts %{y:.0f}<extra></extra>'},
+                {x: overs, y: segmentedProj(chartData.wickets.first, firstIdx), mode: 'lines', name: legendName(t.first_batting) + ' Wkts Proj', yaxis: 'y2', line: {color: c1.secondary, width: 1.6, dash: 'dot', shape: 'hv'}, hovertemplate: 'Over %{x}<br>Proj Wkts %{y:.0f}<extra></extra>'},
+                {x: wk1.x, y: wk1.y, yaxis: 'y2', mode: 'markers+text', text: wk1.x.map(() => 'W'), textposition: 'top center', name: legendName(t.first_batting) + ' Wicket Fall', marker: {size: 10, color: c1.primary, line: {color: '#ffffff', width: 1}}, hovertemplate: 'Wicket at over %{x}<br>Total wickets %{y:.0f}<extra></extra>'}
+                ,{x: [firstOversNow], y: [firstWkNow], yaxis: 'y2', mode: 'markers+text', text: ['Current'], textposition: 'bottom right', name: 'Current Wickets', marker: {size: 10, color: '#111827', symbol: 'diamond'}, hovertemplate: 'Current: ' + firstWkNow.toFixed(0) + ' wickets at ' + firstOversNow.toFixed(2) + ' overs<extra></extra>'}
+            ], {
+                ...commonLayout,
+                title: {text: 'First Innings Analytics', x: 0.02, xanchor: 'left'},
+                xaxis: {title: 'Overs', range: [0, 20]},
+                yaxis: {title: 'Runs'},
+                yaxis2: {title: 'Wickets', overlaying: 'y', side: 'right', range: [0, 10]}
+            });
+
+            renderOrFallback('secondInningsPlotly', 'secondInningsFallback', [
+                {x: overs, y: segmented(chartData.score_progression.second, secondIdx), mode: 'lines', name: legendName(t.second_batting) + ' Score Actual', line: {color: c2.primary, width: 3}, hovertemplate: 'Over %{x}<br>Runs %{y:.1f}<extra></extra>'},
+                {x: overs, y: segmentedProj(chartData.score_progression.second, secondIdx), mode: 'lines', name: legendName(t.second_batting) + ' Score Proj', line: {color: c2.secondary, width: 2, dash: 'dash'}, hovertemplate: 'Over %{x}<br>Proj Runs %{y:.1f}<extra></extra>'},
+                {x: overs, y: chartData.score_progression.target, mode: 'lines', name: 'Target', line: {color: '#f59e0b', width: 1.8, dash: 'dot'}, hovertemplate: 'Over %{x}<br>Target %{y:.1f}<extra></extra>'},
+                {x: overs, y: segmented(chartData.run_rate.current_rr, secondIdx), mode: 'lines', name: legendName(t.second_batting) + ' Current RR', yaxis: 'y2', line: {color: c2.dark, width: 2}, hovertemplate: 'Over %{x}<br>CRR %{y:.2f}<extra></extra>'},
+                {x: overs, y: segmented(chartData.run_rate.required_rr, secondIdx), mode: 'lines', name: legendName(t.second_bowling) + ' Required RR', yaxis: 'y2', line: {color: c2b.primary, width: 2}, hovertemplate: 'Over %{x}<br>RRR %{y:.2f}<extra></extra>'}
+            ], {
+                ...commonLayout,
+                title: {text: 'Second Innings Analytics', x: 0.02, xanchor: 'left'},
+                xaxis: {title: 'Overs', range: [0, 20]},
+                yaxis: {title: 'Runs'},
+                yaxis2: {title: 'Run Rate', overlaying: 'y', side: 'right'}
+            });
+
+            const scoreProgressionTraces = [
+                {x: overs, y: chartData.score_progression.first, mode: 'lines', name: legendName(t.first_batting), line: {color: c1.primary, width: 2.8}, hovertemplate: 'Over %{x}<br>' + t.first_batting + ' %{y:.1f}<extra></extra>'},
+                {x: overs, y: chartData.score_progression.target, mode: 'lines', name: 'Target', line: {color: '#f59e0b', width: 1.6, dash: 'dot'}, hovertemplate: 'Over %{x}<br>Target %{y:.1f}<extra></extra>'}
+            ];
+            if (secondStarted) {
+                scoreProgressionTraces.splice(1, 0, {
+                    x: overs,
+                    y: chartData.score_progression.second,
+                    mode: 'lines',
+                    name: legendName(t.second_batting),
+                    line: {color: c2.primary, width: 2.8},
+                    hovertemplate: 'Over %{x}<br>' + t.second_batting + ' %{y:.1f}<extra></extra>'
+                });
+            }
+
+            renderOrFallback('scoreProgressionPlotly', 'scoreProgressionFallback', scoreProgressionTraces, {
+                ...commonLayout,
+                xaxis: {title: 'Overs', range: [0, 20]},
+                yaxis: {title: 'Runs'}
+            });
+
+            if (secondStarted) {
+                renderOrFallback('runRatePlotly', 'runRateFallback', [
+                    {x: overs, y: chartData.run_rate.current_rr, mode: 'lines', name: legendName(t.second_batting) + ' Current RR', line: {color: c2.primary, width: 2.4}, hovertemplate: 'Over %{x}<br>CRR %{y:.2f}<extra></extra>'},
+                    {x: overs, y: chartData.run_rate.required_rr, mode: 'lines', name: legendName(t.second_bowling) + ' Required RR', line: {color: c2b.primary, width: 2.4, dash: 'dash'}, hovertemplate: 'Over %{x}<br>RRR %{y:.2f}<extra></extra>'}
+                ], {
+                    ...commonLayout,
+                    xaxis: {title: 'Overs', range: [0, 20]},
+                    yaxis: {title: 'Run Rate'}
+                });
+            }
+
+            const chaseNow = chartData.state.chasing_wp_now;
+            (function renderWinBroadcast() {
+                const box = document.getElementById('winProbabilityBroadcast');
+                if (!box) return;
+                const leftTeam = t.second_batting;
+                const rightTeam = t.second_bowling;
+                const leftPct = Math.max(0, Math.min(100, Number(chaseNow) || 0));
+                const rightPct = 100 - leftPct;
+                const leftLogo = teamLogos[leftTeam];
+                const rightLogo = teamLogos[rightTeam];
+
+                const makeTeamNode = (teamName, logoUrl) => {
+                    const team = document.createElement('div');
+                    team.className = 'win-team';
+
+                    if (logoUrl) {
+                        const img = document.createElement('img');
+                        img.className = 'win-flag';
+                        img.alt = `${teamName} logo`;
+                        img.loading = 'lazy';
+                        img.src = logoUrl;
+                        img.onerror = function () {
+                            const fb = document.createElement('div');
+                            fb.className = 'win-flag-fallback';
+                            fb.textContent = '🏏';
+                            this.replaceWith(fb);
+                        };
+                        team.appendChild(img);
+                    } else {
+                        const fb = document.createElement('div');
+                        fb.className = 'win-flag-fallback';
+                        fb.textContent = '🏏';
+                        team.appendChild(fb);
+                    }
+
+                    const name = document.createElement('div');
+                    name.className = 'win-name';
+                    name.textContent = teamName;
+                    team.appendChild(name);
+                    return team;
+                };
+
+                const head = document.createElement('div');
+                head.className = 'win-head';
+                head.appendChild(makeTeamNode(leftTeam, leftLogo));
+                const vs = document.createElement('div');
+                vs.className = 'win-vs';
+                vs.textContent = 'vs';
+                head.appendChild(vs);
+                head.appendChild(makeTeamNode(rightTeam, rightLogo));
+
+                const title = document.createElement('div');
+                title.className = 'win-title';
+                title.textContent = 'WIN PROBABILITY';
+
+                const meta = document.createElement('div');
+                meta.className = 'win-meta';
+                const leftMeta = document.createElement('div');
+                leftMeta.className = 'left';
+                leftMeta.style.color = c2.dark;
+                leftMeta.textContent = `${leftTeam} ${leftPct.toFixed(1)}%`;
+                const rightMeta = document.createElement('div');
+                rightMeta.className = 'right';
+                rightMeta.style.color = c2b.dark;
+                rightMeta.textContent = `${rightTeam} ${rightPct.toFixed(1)}%`;
+                meta.append(leftMeta, rightMeta);
+
+                const barWrap = document.createElement('div');
+                barWrap.className = 'win-bar-wrap';
+                barWrap.setAttribute('aria-label', 'Win probability bar');
+                const bar = document.createElement('div');
+                bar.className = 'win-bar';
+                const leftBar = document.createElement('div');
+                leftBar.className = 'win-left';
+                leftBar.style.width = `${leftPct}%`;
+                leftBar.style.background = c2.primary;
+                const rightBar = document.createElement('div');
+                rightBar.className = 'win-right';
+                rightBar.style.width = `${rightPct}%`;
+                rightBar.style.background = c2b.primary;
+                bar.append(leftBar, rightBar);
+                barWrap.appendChild(bar);
+
+                box.replaceChildren(head, title, meta, barWrap);
+            })();
+
+            if (secondStarted) {
+                renderOrFallback('wicketsPlotly', 'wicketsFallback', [
+                    {x: overs, y: chartData.wickets.first, mode: 'lines', name: legendName(t.first_batting) + ' Wickets', line: {color: c1.primary, width: 2.6, shape: 'hv'}, hovertemplate: 'Over %{x}<br>' + t.first_batting + ' Wkts %{y:.0f}<extra></extra>'},
+                    {x: overs, y: chartData.wickets.second, mode: 'lines', name: legendName(t.second_batting) + ' Wickets', line: {color: c2.primary, width: 2.6, shape: 'hv'}, hovertemplate: 'Over %{x}<br>' + t.second_batting + ' Wkts %{y:.0f}<extra></extra>'},
+                    {x: wk1.x, y: wk1.y, mode: 'markers+text', text: wk1.x.map(() => 'W'), textposition: 'top center', name: legendName(t.first_batting) + ' Wicket Falls', marker: {size: 9, color: c1.primary, line: {color: '#fff', width: 1}}, hovertemplate: t.first_batting + ' wicket at over %{x}<br>Total wickets %{y:.0f}<extra></extra>'},
+                    {x: wk2.x, y: wk2.y, mode: 'markers+text', text: wk2.x.map(() => 'W'), textposition: 'bottom center', name: legendName(t.second_batting) + ' Wicket Falls', marker: {size: 9, color: c2.primary, line: {color: '#fff', width: 1}}, hovertemplate: t.second_batting + ' wicket at over %{x}<br>Total wickets %{y:.0f}<extra></extra>'},
+                    {x: [firstOversNow], y: [firstWkNow], mode: 'markers+text', text: ['Current-1st'], textposition: 'top left', name: 'Current 1st Inn Wkts', marker: {size: 10, color: '#111827', symbol: 'diamond'}, hovertemplate: 'Current 1st innings: ' + firstWkNow.toFixed(0) + ' wickets at ' + firstOversNow.toFixed(2) + ' overs<extra></extra>'},
+                    {x: [secondOversNow], y: [secondWkNow], mode: 'markers+text', text: ['Current-2nd'], textposition: 'bottom right', name: 'Current 2nd Inn Wkts', marker: {size: 10, color: '#334155', symbol: 'diamond'}, hovertemplate: 'Current 2nd innings: ' + secondWkNow.toFixed(0) + ' wickets at ' + secondOversNow.toFixed(2) + ' overs<extra></extra>'}
+                ], {
+                    ...commonLayout,
+                    xaxis: {title: 'Overs', range: [0, 20]},
+                    yaxis: {title: 'Wickets Lost', range: [0, 10]},
+                    shapes: [
+                        {type: 'rect', x0: 0, x1: 6, y0: 0, y1: 10, fillcolor: '#eef2ff', line: {width: 0}, opacity: 0.35, layer: 'below'},
+                        {type: 'rect', x0: 15, x1: 20, y0: 0, y1: 10, fillcolor: '#ecfeff', line: {width: 0}, opacity: 0.35, layer: 'below'}
+                    ]
+                });
+
+                renderOrFallback('momentumPlotly', 'wicketsFallback', [
+                    {x: overs, y: overRuns1, mode: 'lines+markers', name: legendName(t.first_batting) + ' Over Runs', line: {color: c1.primary, width: 2.2}, marker: {size: 5}, hovertemplate: 'Over %{x}<br>' + t.first_batting + ' Runs %{y:.1f}<extra></extra>'},
+                    {x: overs, y: overRuns2, mode: 'lines+markers', name: legendName(t.second_batting) + ' Over Runs', line: {color: c2.primary, width: 2.2}, marker: {size: 5}, hovertemplate: 'Over %{x}<br>' + t.second_batting + ' Runs %{y:.1f}<extra></extra>'}
+                ], {
+                    ...commonLayout,
+                    xaxis: {title: 'Over', range: [0, 20]},
+                    yaxis: {title: 'Runs in Over'}
+                });
+
+                renderOrFallback('ballScorePlotly', 'scoreProgressionFallback', [
+                    {x: balls, y: ballScore1, mode: 'lines', name: legendName(t.first_batting) + ' Score', line: {color: c1.primary, width: 2.5}, hovertemplate: 'Ball %{x}<br>' + t.first_batting + ' %{y:.1f}<extra></extra>'},
+                    {x: balls, y: ballScore2, mode: 'lines', name: legendName(t.second_batting) + ' Score', line: {color: c2.primary, width: 2.5}, hovertemplate: 'Ball %{x}<br>' + t.second_batting + ' %{y:.1f}<extra></extra>'},
+                    {x: balls, y: ballTarget, mode: 'lines', name: 'Target', line: {color: '#f59e0b', width: 1.8, dash: 'dot'}, hovertemplate: 'Ball %{x}<br>Target %{y:.1f}<extra></extra>'}
+                ], {
+                    ...commonLayout,
+                    xaxis: {title: 'Balls Bowled', range: [0, 120]},
+                    yaxis: {title: 'Score'}
+                });
+
+                renderOrFallback('ballRrPlotly', 'runRateFallback', [
+                    {x: balls, y: ballCrr, mode: 'lines', name: legendName(t.second_batting) + ' Current Run Rate', line: {color: c2.primary, width: 2.3}, hovertemplate: 'Ball %{x}<br>CRR %{y:.2f}<extra></extra>'},
+                    {x: balls, y: ballRrr, mode: 'lines', name: legendName(t.second_bowling) + ' Required Run Rate', line: {color: c2b.primary, width: 2.3}, hovertemplate: 'Ball %{x}<br>RRR %{y:.2f}<extra></extra>'}
+                ], {
+                    ...commonLayout,
+                    xaxis: {title: 'Balls Bowled', range: [0, 120]},
+                    yaxis: {title: 'Runs Per Over'}
+                });
+            }
+
+            applyPlotThemeToRenderedCharts();
+
+        })();
+    </script>
+</body>
+</html>

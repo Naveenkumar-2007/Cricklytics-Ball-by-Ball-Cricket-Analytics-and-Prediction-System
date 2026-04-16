@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#A6D8F5"/><stop offset="100%" stop-color="#5AA8D2"/></linearGradient></defs>
+  <circle cx="120" cy="120" r="114" fill="url(#g)" stroke="#F78F1E" stroke-width="10" />
+  <text x="120" y="136" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="70" font-weight="800" fill="#F78F1E">LSG</text>
+</svg>
