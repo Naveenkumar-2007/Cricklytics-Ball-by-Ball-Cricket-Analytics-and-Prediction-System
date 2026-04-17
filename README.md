@@ -1,5 +1,16 @@
-<<<<<<< HEAD
-﻿# Cricklytics: Ball-by-Ball Cricket Analytics and Prediction System
+---
+title: Cricklytics
+emoji: 🏏
+colorFrom: blue
+colorTo: cyan
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+short_description: Cricket score prediction and analytics
+---
+
+# Cricklytics: Ball-by-Ball Cricket Analytics and Prediction System
 
 Production-style cricket analytics platform built on ball-by-ball data for two competition modes:
 - International T20 (World Cup style datasets)
@@ -324,17 +335,3 @@ Add your preferred license file (for example MIT) before public distribution.
 ---
 
 If you use this project, please star the repository and reference Cricklytics in your derivative work.
-=======
----
-title: Cricklytics Analytics
-emoji: 🐠
-colorFrom: yellow
-colorTo: pink
-sdk: docker
-pinned: false
-license: mit
-short_description: 'cricket predictions '
----
-
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
->>>>>>> 48c6bfa6ee763d0d8872de1ee5e17c5231346f34
