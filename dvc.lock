@@ -1,0 +1,132 @@
+schema: '2.0'
+stages:
+  train_international:
+    cmd: .\\.venv\\Scripts\\python.exe scripts/dvc_train.py --competition 
+      international --profile fast --max-tuning-rows 5000
+    deps:
+    - path: scripts/dvc_train.py
+      hash: md5
+      md5: 6a2eb6a0fad9718e4f1c2b326896f19c
+      size: 1470
+    - path: src
+      hash: md5
+      md5: aca3626d1e7b78593a2204c4ea62348f.dir
+      size: 99024
+      nfiles: 18
+    - path: t20_wc_2016_deliveries.csv
+      hash: md5
+      md5: 1e54312fd3acd92039b6cb2d8c2d7d56
+      size: 1024374
+    - path: t20_wc_2021_deliveries.csv
+      hash: md5
+      md5: 4e23a30babea5a129fc4d35b8ee611e0
+      size: 1322548
+    - path: t20_wc_2022_deliveries.csv
+      hash: md5
+      md5: f99f8d6ac172ceea2196d675d602bd2a
+      size: 1157049
+    - path: t20_wc_2024_deliveries.csv
+      hash: md5
+      md5: 38937f495649da6ca991cf32880d6287
+      size: 1619756
+    - path: train.py
+      hash: md5
+      md5: 9b37c5689c039717361101d73490f882
+      size: 5455
+    params:
+      params.yaml:
+        train.max_tuning_rows: 5000
+        train.profile: fast
+    outs:
+    - path: artifacts/dual
+      hash: md5
+      md5: 75b273dbceca9d772a5737617f440d3f.dir
+      size: 21151456
+      nfiles: 27
+    - path: artifacts/metrics.json
+      hash: md5
+      md5: a8da01cca27bdc9b158278fa1945702a
+      size: 1013
+    - path: artifacts/model.pkl
+      hash: md5
+      md5: e481eb57a988b463323e4be624e5023a
+      size: 1584619
+    - path: artifacts/preprocessor.pkl
+      hash: md5
+      md5: a65ed99b9c4253ddaaf83ec5e29a6084
+      size: 3822
+    - path: artifacts/processed_dataset.csv
+      hash: md5
+      md5: 23cf11efb79b2d9eb54467e7a1bf395d
+      size: 10126888
+    - path: artifacts/raw_dataset.csv
+      hash: md5
+      md5: ca318f944baf4ff40570af8073e26193
+      size: 6335523
+    - path: artifacts/test.csv
+      hash: md5
+      md5: 202dbe91202998353199a0d1f70e768e
+      size: 632920
+    - path: artifacts/train.csv
+      hash: md5
+      md5: 5849c89848b9a1c2feb7a8c9e3a60954
+      size: 1862975
+  train_ipl:
+    cmd: .\\.venv\\Scripts\\python.exe scripts/dvc_train.py --competition ipl 
+      --profile fast --max-tuning-rows 5000
+    deps:
+    - path: IPL.csv
+      hash: md5
+      md5: a294dcb1ea9f97437b745825a7321629
+      size: 107542064
+    - path: scripts/dvc_train.py
+      hash: md5
+      md5: 6a2eb6a0fad9718e4f1c2b326896f19c
+      size: 1470
+    - path: src
+      hash: md5
+      md5: aca3626d1e7b78593a2204c4ea62348f.dir
+      size: 99024
+      nfiles: 18
+    - path: train_ipl.py
+      hash: md5
+      md5: f43dae035b786ac576a08a74508223ef
+      size: 8769
+    params:
+      params.yaml:
+        train.max_tuning_rows: 5000
+        train.profile: fast
+    outs:
+    - path: artifacts/ipl/dual
+      hash: md5
+      md5: 21d0316507dbf8a5f68120e67dbdb8cc.dir
+      size: 144257305
+      nfiles: 27
+    - path: artifacts/ipl/metrics.json
+      hash: md5
+      md5: 12df77096a1f18855edc9e35ab307516
+      size: 1045
+    - path: artifacts/ipl/model.pkl
+      hash: md5
+      md5: f5e4b5c536983213bb3b4ffe05a77026
+      size: 2348971
+    - path: artifacts/ipl/preprocessor.pkl
+      hash: md5
+      md5: eec0a2a7949def0cc94ddb37ee12f8cb
+      size: 5263
+    - path: artifacts/ipl/processed_dataset.csv
+      hash: md5
+      md5: a29669c44ac0af0383d7bf44d9d2e98e
+      size: 76348028
+    - path: artifacts/ipl/raw_dataset.csv
+      hash: md5
+      md5: e650943d378974bcba75d73133597d82
+      size: 39378493
+    - path: artifacts/ipl/test.csv
+      hash: md5
+      md5: bb56bac56c7acc2e4ed33b37e42606c8
+      size: 5427119
+    - path: artifacts/ipl/train.csv
+      hash: md5
+      md5: b1595f0ceb5a067ce61842d9e190cb25
+      size: 16287438

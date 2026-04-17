@@ -192,18 +192,30 @@ def _runtime_for_competition(competition: str) -> Dict[str, object]:
     paths = _competition_paths(competition)
     ready = _artifacts_ready(paths)
 
+    load_error = None
     if ready:
-        engine = RealtimeEngine(
-            first_model_path=paths["first_model_path"],
-            second_model_path=paths["second_model_path"],
-            second_score_model_path=paths["second_score_model_path"],
-            full_context_path=paths["full_context_path"],
-        )
-        full_df = engine.full_context_df.copy()
-        teams = _order_teams(pd.concat([full_df["batting_team"], full_df["bowling_team"]], ignore_index=True))
-        if competition == "ipl":
-            teams = _filter_current_ipl_teams(teams)
-        venues = sorted(full_df["venue"].dropna().astype(str).str.strip().unique().tolist())
+        try:
+            engine = RealtimeEngine(
+                first_model_path=paths["first_model_path"],
+                second_model_path=paths["second_model_path"],
+                second_score_model_path=paths["second_score_model_path"],
+                full_context_path=paths["full_context_path"],
+            )
+            full_df = engine.full_context_df.copy()
+            teams = _order_teams(pd.concat([full_df["batting_team"], full_df["bowling_team"]], ignore_index=True))
+            if competition == "ipl":
+                teams = _filter_current_ipl_teams(teams)
+            venues = sorted(full_df["venue"].dropna().astype(str).str.strip().unique().tolist())
+        except Exception as exc:
+            logger.exception("Failed to load runtime artifacts for competition=%s", competition)
+            engine = None
+            teams = []
+            venues = []
+            load_error = (
+                f"{COMPETITION_CONFIGS[competition]['label']} artifacts could not be loaded: {exc}. "
+                "This usually means environment version mismatch. "
+                "Use the project .venv and install requirements.txt."
+            )
     else:
         engine = None
         teams = []
@@ -214,6 +226,7 @@ def _runtime_for_competition(competition: str) -> Dict[str, object]:
         "teams": teams,
         "venues": venues,
         "artifacts_ready": ready,
+        "load_error": load_error,
         "paths": paths,
     }
     RUNTIME_CACHE[competition] = runtime
@@ -358,6 +371,65 @@ def get_phase_from_balls(balls_bowled: int) -> str:
     if balls_bowled <= 90:
         return "Middle Overs"
     return "Death Overs"
+
+
+def _rr_projection_scenarios(current_rr: float) -> List[Dict[str, float]]:
+    rr = float(current_rr or 0.0)
+    if rr <= 0:
+        rr = 7.0
+
+    candidates = [rr - 0.25, rr, rr + 0.25, rr + 0.75]
+    cleaned = []
+    for value in candidates:
+        bounded = max(3.0, min(14.0, value))
+        rounded = round(bounded, 2)
+        if rounded not in cleaned:
+            cleaned.append(rounded)
+
+    while len(cleaned) < 4:
+        next_rr = round(min(14.0, cleaned[-1] + 0.5), 2)
+        if next_rr in cleaned:
+            break
+        cleaned.append(next_rr)
+
+    scenarios = []
+    current_key = round(rr, 2)
+    for rr_value in sorted(cleaned):
+        scenarios.append(
+            {
+                "rr": rr_value,
+                "is_current": abs(rr_value - current_key) < 0.01,
+                "score_6": int(round(rr_value * 6)),
+                "score_20": int(round(rr_value * 20)),
+            }
+        )
+    return scenarios
+
+
+def _second_rr_projection_scenarios(
+    current_rr: float,
+    current_score: float,
+    balls_remaining: int,
+) -> List[Dict[str, float]]:
+    base_scenarios = _rr_projection_scenarios(current_rr)
+    score_now = float(current_score or 0.0)
+    balls_rem = max(0, int(balls_remaining or 0))
+    next_6_balls = min(36, balls_rem)
+
+    scenarios = []
+    for row in base_scenarios:
+        rr_value = float(row["rr"])
+        score_after_6 = score_now + (rr_value * next_6_balls / 6.0)
+        score_at_20 = score_now + (rr_value * balls_rem / 6.0)
+        scenarios.append(
+            {
+                "rr": rr_value,
+                "is_current": bool(row.get("is_current")),
+                "score_6": int(round(score_after_6)),
+                "score_20": int(round(score_at_20)),
+            }
+        )
+    return scenarios
 
 
 def _safe_overs_to_float(overs_text: str, fallback: float = 0.0) -> float:
@@ -672,6 +744,34 @@ def _build_chart_images(chart_data):
         ax.plot(x, y, color="#111827", linewidth=lw + 1.8, alpha=0.15, linestyle=style)
         ax.plot(x, y, color=color, linewidth=lw, linestyle=style, label=label)
 
+    def _legend_team(team_name: str) -> str:
+        canonical = _canonical_team_key(team_name)
+        if canonical and canonical != team_name:
+            return canonical
+        if len(str(team_name)) <= 14:
+            return str(team_name)
+        return str(team_name)[:12] + ".."
+
+    def _inside_legend(ax, handles=None, labels=None, ncol=1):
+        legend_kwargs = {
+            "loc": "upper left",
+            "bbox_to_anchor": (0.01, 0.99),
+            "borderaxespad": 0.2,
+            "fontsize": 7,
+            "frameon": True,
+            "framealpha": 0.9,
+            "facecolor": "#ffffff",
+            "edgecolor": "#cbd5e1",
+            "ncol": ncol,
+            "columnspacing": 0.7,
+            "handlelength": 1.8,
+            "labelspacing": 0.35,
+        }
+        if handles is not None and labels is not None:
+            ax.legend(handles, labels, **legend_kwargs)
+        else:
+            ax.legend(**legend_kwargs)
+
     def _segmented(curve, split_idx):
         split_idx = max(0, min(len(curve) - 1, int(split_idx)))
         actual = curve.copy()
@@ -708,8 +808,13 @@ def _build_chart_images(chart_data):
     fig0, ax0 = plt.subplots(figsize=(8.5, 3.3))
     ax0.axvspan(0, 6, color=c_first_bat["light"], alpha=0.28)
     ax0.axvspan(15, 20, color=c_first_bat["light"], alpha=0.28)
-    _shadow_line(ax0, overs, first_actual, c_first_bat["primary"], lw=2.7, label=f"{t['first_batting']} Score (Actual)")
-    _shadow_line(ax0, overs, first_proj, c_first_bat["secondary"], lw=2.2, label=f"{t['first_batting']} Score (Projected)", style="--")
+    first_bat_short = _legend_team(t["first_batting"])
+    first_bowl_short = _legend_team(t["first_bowling"])
+    second_bat_short = _legend_team(t["second_batting"])
+    second_bowl_short = _legend_team(t["second_bowling"])
+
+    _shadow_line(ax0, overs, first_actual, c_first_bat["primary"], lw=2.7, label=f"{first_bat_short} Score Act")
+    _shadow_line(ax0, overs, first_proj, c_first_bat["secondary"], lw=2.2, label=f"{first_bat_short} Score Proj", style="--")
     ax0.set_xlim(0, 20)
     ax0.set_xlabel("Overs")
     ax0.set_ylabel("Runs")
@@ -717,13 +822,13 @@ def _build_chart_images(chart_data):
     ax0.set_title("First Innings Analytics: Score + Wickets")
     ax0b = ax0.twinx()
     first_w_a, first_w_p = _segmented(first_wk, first_idx)
-    ax0b.plot(overs, first_w_a, color=c_first_bowl["dark"], linewidth=2.1, label=f"{t['first_batting']} Wickets (Actual)")
-    ax0b.plot(overs, first_w_p, color=c_first_bowl["secondary"], linewidth=1.9, linestyle="--", label=f"{t['first_batting']} Wickets (Projected)")
+    ax0b.plot(overs, first_w_a, color=c_first_bowl["dark"], linewidth=2.1, label=f"{first_bat_short} Wkts Act")
+    ax0b.plot(overs, first_w_p, color=c_first_bowl["secondary"], linewidth=1.9, linestyle="--", label=f"{first_bat_short} Wkts Proj")
     ax0b.set_ylim(0, 10)
     ax0b.set_ylabel("Wickets Lost")
     h0, l0 = ax0.get_legend_handles_labels()
     h0b, l0b = ax0b.get_legend_handles_labels()
-    ax0.legend(h0 + h0b, l0 + l0b, loc="upper left", fontsize=8)
+    _inside_legend(ax0, h0 + h0b, l0 + l0b, ncol=2)
     images["first_innings_panel"] = _fig_to_base64(fig0)
     plt.close(fig0)
 
@@ -731,8 +836,8 @@ def _build_chart_images(chart_data):
     fig00, ax00 = plt.subplots(figsize=(8.5, 3.3))
     ax00.axvspan(0, 6, color=c_second_bat["light"], alpha=0.24)
     ax00.axvspan(15, 20, color=c_second_bowl["light"], alpha=0.24)
-    _shadow_line(ax00, overs, second_actual, c_second_bat["primary"], lw=2.7, label=f"{t['second_batting']} Score (Actual)")
-    _shadow_line(ax00, overs, second_proj, c_second_bat["secondary"], lw=2.2, label=f"{t['second_batting']} Score (Projected)", style="--")
+    _shadow_line(ax00, overs, second_actual, c_second_bat["primary"], lw=2.7, label=f"{second_bat_short} Score Act")
+    _shadow_line(ax00, overs, second_proj, c_second_bat["secondary"], lw=2.2, label=f"{second_bat_short} Score Proj", style="--")
     ax00.plot(overs, score["target"], color="#f59e0b", linewidth=1.8, linestyle=":", label="Target")
     ax00.set_xlim(0, 20)
     ax00.set_xlabel("Overs")
@@ -745,14 +850,14 @@ def _build_chart_images(chart_data):
     rr_a, rr_p = _segmented(rr_current, second_idx)
     req_a, req_p = _segmented(rr_required, second_idx)
     ax00b = ax00.twinx()
-    ax00b.plot(overs, rr_a, color=c_second_bat["dark"], linewidth=2.0, label="Current RR")
-    ax00b.plot(overs, req_a, color=c_second_bowl["primary"], linewidth=2.0, label="Required RR")
-    ax00b.plot(overs, rr_p, color=c_second_bat["secondary"], linewidth=1.6, linestyle="--", label="Current RR (Proj)")
-    ax00b.plot(overs, req_p, color=c_second_bowl["secondary"], linewidth=1.6, linestyle="--", label="Required RR (Proj)")
+    ax00b.plot(overs, rr_a, color=c_second_bat["dark"], linewidth=2.0, label=f"{second_bat_short} RR")
+    ax00b.plot(overs, req_a, color=c_second_bowl["primary"], linewidth=2.0, label=f"{second_bowl_short} Req RR")
+    ax00b.plot(overs, rr_p, color=c_second_bat["secondary"], linewidth=1.6, linestyle="--", label=f"{second_bat_short} RR Proj")
+    ax00b.plot(overs, req_p, color=c_second_bowl["secondary"], linewidth=1.6, linestyle="--", label=f"{second_bowl_short} Req Proj")
     ax00b.set_ylabel("Run Rate")
     h00, l00 = ax00.get_legend_handles_labels()
     h00b, l00b = ax00b.get_legend_handles_labels()
-    ax00.legend(h00 + h00b, l00 + l00b, loc="upper left", fontsize=8)
+    _inside_legend(ax00, h00 + h00b, l00 + l00b, ncol=2)
     images["second_innings_panel"] = _fig_to_base64(fig00)
     plt.close(fig00)
 
@@ -761,11 +866,11 @@ def _build_chart_images(chart_data):
     ax1.axvspan(6, 15, color="#f8fafc", alpha=0.85)
     ax1.axvspan(15, 20, color=c_second_bat["light"], alpha=0.45)
 
-    _shadow_line(ax1, overs, first_actual, c_first_bat["primary"], lw=2.6, label=f"{t['first_batting']} Actual")
-    _shadow_line(ax1, overs, first_proj, c_first_bat["secondary"], lw=2.3, label=f"{t['first_batting']} Projected", style="--")
-    _shadow_line(ax1, overs, second_actual, c_second_bat["primary"], lw=2.6, label=f"{t['second_batting']} Actual")
-    _shadow_line(ax1, overs, second_proj, c_second_bat["secondary"], lw=2.3, label=f"{t['second_batting']} Projected", style="--")
-    ax1.plot(overs, score["target"], color="#f59e0b", linewidth=1.8, linestyle=":", label=f"{t['second_batting']} Target")
+    _shadow_line(ax1, overs, first_actual, c_first_bat["primary"], lw=2.6, label=f"{first_bat_short} Act")
+    _shadow_line(ax1, overs, first_proj, c_first_bat["secondary"], lw=2.3, label=f"{first_bat_short} Proj", style="--")
+    _shadow_line(ax1, overs, second_actual, c_second_bat["primary"], lw=2.6, label=f"{second_bat_short} Act")
+    _shadow_line(ax1, overs, second_proj, c_second_bat["secondary"], lw=2.3, label=f"{second_bat_short} Proj", style="--")
+    ax1.plot(overs, score["target"], color="#f59e0b", linewidth=1.8, linestyle=":", label="Target")
 
     wicket_overs = _wicket_fall_overs(second_wk, second_idx)
     wicket_scores = [float(second_score[o]) for o in wicket_overs]
@@ -777,7 +882,7 @@ def _build_chart_images(chart_data):
     ax1.set_ylabel("Runs")
     ax1.grid(alpha=0.25)
     ax1.set_xlim(0, 20)
-    ax1.legend(loc="upper left", fontsize=8)
+    _inside_legend(ax1, ncol=2)
     images["score_progression"] = _fig_to_base64(fig1)
     plt.close(fig1)
 
@@ -785,17 +890,17 @@ def _build_chart_images(chart_data):
     rr_a, rr_p = _segmented(rr_current, second_idx)
     req_a, req_p = _segmented(rr_required, second_idx)
 
-    _shadow_line(ax2, overs, rr_a, c_second_bat["primary"], lw=2.4, label=f"{t['second_batting']} Current RR")
-    _shadow_line(ax2, overs, rr_p, c_second_bat["secondary"], lw=2.1, label=f"{t['second_batting']} RR Projection", style="--")
-    _shadow_line(ax2, overs, req_a, c_second_bowl["primary"], lw=2.4, label="Required RR")
-    _shadow_line(ax2, overs, req_p, c_second_bowl["secondary"], lw=2.1, label="Required RR Projection", style="--")
+    _shadow_line(ax2, overs, rr_a, c_second_bat["primary"], lw=2.4, label=f"{second_bat_short} RR")
+    _shadow_line(ax2, overs, rr_p, c_second_bat["secondary"], lw=2.1, label=f"{second_bat_short} RR Proj", style="--")
+    _shadow_line(ax2, overs, req_a, c_second_bowl["primary"], lw=2.4, label=f"{second_bowl_short} Req RR")
+    _shadow_line(ax2, overs, req_p, c_second_bowl["secondary"], lw=2.1, label=f"{second_bowl_short} Req Proj", style="--")
 
     ax2.set_title("Run Rate vs Required Run Rate")
     ax2.set_xlabel("Overs")
     ax2.set_ylabel("Run Rate")
     ax2.grid(alpha=0.25)
     ax2.set_xlim(0, 20)
-    ax2.legend(loc="upper left", fontsize=8)
+    _inside_legend(ax2, ncol=2)
     images["run_rate"] = _fig_to_base64(fig2)
     plt.close(fig2)
 
@@ -831,10 +936,10 @@ def _build_chart_images(chart_data):
 
     first_s_a, first_s_p = _segmented(first_score, first_idx)
     second_s_a, second_s_p = _segmented(second_score, second_idx)
-    _shadow_line(ax4, overs, first_s_a, c_first_bat["primary"], lw=2.8, label=f"{t['first_batting']} Actual")
-    _shadow_line(ax4, overs, first_s_p, c_first_bat["secondary"], lw=2.3, label=f"{t['first_batting']} Projected", style="--")
-    _shadow_line(ax4, overs, second_s_a, c_second_bat["primary"], lw=2.8, label=f"{t['second_batting']} Actual")
-    _shadow_line(ax4, overs, second_s_p, c_second_bat["secondary"], lw=2.3, label=f"{t['second_batting']} Projected", style="--")
+    _shadow_line(ax4, overs, first_s_a, c_first_bat["primary"], lw=2.8, label=f"{first_bat_short} Act")
+    _shadow_line(ax4, overs, first_s_p, c_first_bat["secondary"], lw=2.3, label=f"{first_bat_short} Proj", style="--")
+    _shadow_line(ax4, overs, second_s_a, c_second_bat["primary"], lw=2.8, label=f"{second_bat_short} Act")
+    _shadow_line(ax4, overs, second_s_p, c_second_bat["secondary"], lw=2.3, label=f"{second_bat_short} Proj", style="--")
 
     # Wicket markers shown on score worm at wicket-fall overs.
     first_wk_overs = _wicket_fall_overs(first_wk, first_idx)
@@ -862,7 +967,7 @@ def _build_chart_images(chart_data):
     ax4.text(3, max(max(first_score), max(second_score)) * 0.03, "Powerplay", fontsize=9, color="#334155", ha="center")
     ax4.text(10.5, max(max(first_score), max(second_score)) * 0.03, "Middle Overs", fontsize=9, color="#334155", ha="center")
     ax4.text(17.5, max(max(first_score), max(second_score)) * 0.03, "Death Overs", fontsize=9, color="#334155", ha="center")
-    ax4.legend(loc="upper left", fontsize=8)
+    _inside_legend(ax4, ncol=2)
     images["wickets"] = _fig_to_base64(fig4)
     plt.close(fig4)
 
@@ -885,11 +990,12 @@ def index():
     teams = runtime["teams"]
     venues = runtime["venues"]
     artifacts_ready = runtime["artifacts_ready"]
+    runtime_load_error = runtime.get("load_error")
 
     first_prediction = session.get("first_prediction")
     second_prediction = session.get("second_prediction")
     debug_values = None
-    error = None
+    error = runtime_load_error
     mode = request.form.get("mode", "second")
     did_submit = request.method == "POST"
 
@@ -1013,6 +1119,8 @@ def index():
                     "defending_win_at_start": round(defending_win_at_start, 2),
                     "projection_low": round(sim_first["p10"]),
                     "projection_high": round(sim_first["p90"]),
+                    "current_rr": round(run_rate, 2),
+                    "rr_scenarios": _rr_projection_scenarios(run_rate),
                 }
                 prediction = first_prediction
                 session["first_prediction"] = first_prediction
@@ -1145,6 +1253,12 @@ def index():
                     "projected_chase_total": round(projected_chase_total),
                     "projection_low": round(sim_second["projected_total_p10"]) if balls_remaining > 0 else round(projected_chase_total),
                     "projection_high": round(sim_second["projected_total_p90"]) if balls_remaining > 0 else round(projected_chase_total),
+                    "current_rr": round(run_rate, 2),
+                    "rr_scenarios": _second_rr_projection_scenarios(
+                        current_rr=run_rate,
+                        current_score=current_score,
+                        balls_remaining=balls_remaining,
+                    ),
                 }
                 prediction = second_prediction
                 session["second_prediction"] = second_prediction
@@ -1233,4 +1347,5 @@ def index():
 if __name__ == "__main__":
     # Default to fast local serving; enable debugger explicitly with FLASK_DEBUG=1.
     debug_mode = os.getenv("FLASK_DEBUG", "0") == "1"
-    app.run(debug=debug_mode, use_reloader=False)
+    port = int(os.getenv("PORT", "7860"))
+    app.run(host="0.0.0.0", port=port, debug=debug_mode, use_reloader=False)

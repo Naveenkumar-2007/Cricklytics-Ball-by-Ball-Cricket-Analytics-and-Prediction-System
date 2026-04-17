@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/navee/Downloads/cricket_score_predictor-main/mlruns/404399914518938663/22b1543195c0432099c4442789668644/artifacts
+end_time: 1776397277280
+entry_point_name: ''
+experiment_id: '404399914518938663'
+lifecycle_stage: active
+run_id: 22b1543195c0432099c4442789668644
+run_name: ipl-train-20260417-034116
+run_uuid: 22b1543195c0432099c4442789668644
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1776397277024
+status: 3
+tags: []
+user_id: navee

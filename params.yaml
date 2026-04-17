@@ -1,0 +1,3 @@
+train:
+  profile: fast
+  max_tuning_rows: 5000

@@ -1,0 +1,48 @@
+stages:
+  train_international:
+    cmd: .\\.venv\\Scripts\\python.exe scripts/dvc_train.py --competition international --profile ${train.profile} --max-tuning-rows ${train.max_tuning_rows}
+    deps:
+      - scripts/dvc_train.py
+      - train.py
+      - src
+      - t20_wc_2016_deliveries.csv
+      - t20_wc_2021_deliveries.csv
+      - t20_wc_2022_deliveries.csv
+      - t20_wc_2024_deliveries.csv
+    params:
+      - train.profile
+      - train.max_tuning_rows
+    outs:
+      - artifacts/dual
+      - artifacts/model.pkl
+      - artifacts/preprocessor.pkl
+      - artifacts/train.csv
+      - artifacts/test.csv
+      - artifacts/processed_dataset.csv
+      - artifacts/raw_dataset.csv
+    metrics:
+      - artifacts/metrics.json:
+          cache: false
+
+  train_ipl:
+    cmd: .\\.venv\\Scripts\\python.exe scripts/dvc_train.py --competition ipl --profile ${train.profile} --max-tuning-rows ${train.max_tuning_rows}
+    deps:
+      - scripts/dvc_train.py
+      - train_ipl.py
+      - src
+      - IPL.csv
+    params:
+      - train.profile
+      - train.max_tuning_rows
+    outs:
+      - artifacts/ipl/dual
+      - artifacts/ipl/model.pkl
+      - artifacts/ipl/preprocessor.pkl
+      - artifacts/ipl/train.csv
+      - artifacts/ipl/test.csv
+      - artifacts/ipl/processed_dataset.csv
+      - artifacts/ipl/raw_dataset.csv
+    metrics:
+      - artifacts/ipl/metrics.json:
+          cache: false
+

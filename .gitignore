@@ -75,3 +75,8 @@ artifacts/**
 .env
 .env.*
 IPL.csv
+
+# =========================
+# DVC cache
+# =========================
+.dvc/cache/

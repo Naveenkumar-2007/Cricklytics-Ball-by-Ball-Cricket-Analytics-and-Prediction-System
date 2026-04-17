@@ -4,6 +4,48 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cricklytics: Ball-by-Ball Cricket Analytics and Prediction System</title>
+    <script>
+        window.__predictLoaderPreview = function (formEl) {
+            if (!formEl) return;
+            var modeField = formEl.querySelector('input[name="mode"]');
+            if (!modeField || (modeField.value !== 'first' && modeField.value !== 'second')) return;
+            document.body.classList.add('predicting');
+            var overlay = document.getElementById('predictLoadingOverlay');
+            if (overlay) {
+                overlay.classList.add('active');
+                overlay.style.display = 'flex';
+                overlay.setAttribute('aria-hidden', 'false');
+            }
+        };
+
+        window.__predictLoaderSubmit = function (formEl, event) {
+            if (!formEl) return true;
+            var modeField = formEl.querySelector('input[name="mode"]');
+            if (!modeField || (modeField.value !== 'first' && modeField.value !== 'second')) return true;
+            if (formEl.dataset.submitting === '1') return false;
+
+            if (event && typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
+
+            formEl.dataset.submitting = '1';
+            var submitBtn = formEl.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Predicting...';
+            }
+
+            window.__predictLoaderPreview(formEl);
+
+            requestAnimationFrame(function () {
+                setTimeout(function () {
+                    formEl.submit();
+                }, 130);
+            });
+
+            return false;
+        };
+    </script>
     <style>
         :root {
             --bg-main: radial-gradient(circle at top right, #eef8ff 0%, #f6f8fb 45%, #f3f9f6 100%);
@@ -141,9 +183,127 @@
         .summary-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
         .summary-table th, .summary-table td { border: 1px solid var(--table-border); padding: 8px; text-align: left; }
         .summary-table th { background: var(--table-head); }
+        .rr-proj-card { margin-top: 10px; border: 1px solid var(--table-border); border-radius: 12px; background: var(--plot-bg); padding: 10px; }
+        .rr-proj-title { margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #0f2940; }
+        .rr-proj-title small { font-size: 75%; color: var(--muted-text); font-weight: 600; }
+        .rr-proj-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+        .rr-proj-table th, .rr-proj-table td { padding: 9px 10px; border-bottom: 1px solid var(--table-border); text-align: center; }
+        .rr-proj-table th:first-child, .rr-proj-table td:first-child { text-align: left; color: var(--muted-text); width: 28%; }
+        .rr-proj-table thead th { background: var(--table-head); font-weight: 700; }
+        .rr-proj-table tr:last-child td { border-bottom: none; }
+        .rr-proj-current { font-weight: 800; color: #0f172a; }
+        body.dark-mode .rr-proj-title { color: #e6eef8; }
+        body.dark-mode .rr-proj-current { color: #f8fafc; }
         .team-cell { display: inline-flex; align-items: center; gap: 8px; }
         .team-logo { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #cbd5e1; object-fit: cover; background: #fff; }
         .team-logo-fallback { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; background: #fff; }
+        .predict-loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #020a14;
+        }
+        .predict-loading-overlay.active { display: flex; }
+        .predict-loading-stage {
+            position: relative;
+            --loader-w: min(92vw, 920px);
+            --loader-h: calc(var(--loader-w) * 0.7024);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .predict-anim-wrap {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: var(--loader-w);
+            height: var(--loader-h);
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            pointer-events: none;
+        }
+        .predict-loader-reference {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: var(--loader-w);
+            height: var(--loader-h);
+            object-fit: fill;
+            object-position: center;
+            display: block;
+        }
+        .predict-static-mask {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: var(--loader-w);
+            height: var(--loader-h);
+            transform: translate(-50%, -50%);
+            background: #020a14;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .predict-static-ball-mask {
+            clip-path: inset(24.6% 43.8% 58.8% 43.8% round 999px);
+        }
+        .predict-static-bat-mask {
+            clip-path: inset(41.8% 11.5% 26.8% 11.5% round 999px);
+        }
+        .predict-real-sprite {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: var(--loader-w);
+            height: var(--loader-h);
+            transform: translate(-50%, -50%);
+            object-fit: fill;
+            object-position: center;
+            pointer-events: none;
+            display: block;
+        }
+        .predict-ball-sprite {
+            clip-path: inset(25.8% 44.8% 60.2% 44.8% round 999px);
+            filter: drop-shadow(0 0 10px rgba(231, 240, 255, 0.32));
+            will-change: transform;
+            backface-visibility: hidden;
+            animation: loader-ball-real 0.96s cubic-bezier(0.38, 0.02, 0.58, 0.95) infinite;
+        }
+        .predict-bat-sprite {
+            clip-path: inset(42.2% 12.2% 27.6% 12.1% round 999px);
+            transform: translate(-50%, -50%);
+            transform-origin: 78% 56%;
+            will-change: transform;
+            backface-visibility: hidden;
+            animation: loader-bat-real 0.96s cubic-bezier(0.28, 0.05, 0.45, 0.98) infinite;
+        }
+        .predict-loading-text {
+            display: none;
+        }
+        @keyframes loader-ball-real {
+            0% { transform: translate(-50%, calc(-50% - 34px)); }
+            24% { transform: translate(-50%, calc(-50% - 12px)); }
+            36% { transform: translate(calc(-50% + 18px), calc(-50% + 26px)); }
+            42% { transform: translate(calc(-50% + 24px), calc(-50% + 34px)); }
+            46% { transform: translate(calc(-50% + 24px), calc(-50% + 34px)); }
+            58% { transform: translate(calc(-50% + 6px), calc(-50% - 68px)); }
+            76% { transform: translate(-50%, calc(-50% - 16px)); }
+            100% { transform: translate(-50%, calc(-50% - 34px)); }
+        }
+        @keyframes loader-bat-real {
+            0% { transform: translate(-50%, -50%) rotate(-8deg); }
+            24% { transform: translate(-50%, -50%) rotate(-10deg); }
+            42% { transform: translate(-50%, calc(-50% + 4px)) rotate(15deg); }
+            46% { transform: translate(-50%, calc(-50% + 4px)) rotate(15deg); }
+            60% { transform: translate(-50%, -50%) rotate(1deg); }
+            100% { transform: translate(-50%, -50%) rotate(-8deg); }
+        }
         .row-first { background: #eef4ff; }
         .row-second { background: #eefcf4; }
         .kpi-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
@@ -240,6 +400,7 @@
         body.dark-mode .row-second { background: #122f25; }
         body.dark-mode .ok { background: #103426; color: #8ee7b0; border-color: #1f5a44; }
         body.dark-mode .error { background: #3a1718; color: #ffb4b7; border-color: #6b2b2d; }
+        body.predicting #predictLoadingOverlay { display: flex !important; }
     </style>
 </head>
 <body>
@@ -297,7 +458,7 @@
                     <img id="firstBowlingLogo" class="hero-logo" src="{{ team_logos.get(form_values.first_bowling_team, '') }}" alt="First innings bowling team logo" loading="lazy" onerror="this.style.visibility='hidden'; this.removeAttribute('src');" />
                 </div>
             </div>
-            <form method="POST" class="grid">
+            <form id="firstPredictionForm" method="POST" class="grid" onsubmit="return window.__predictLoaderSubmit(this, event)">
                 <input type="hidden" name="mode" value="first" />
                 <input type="hidden" name="competition" value="{{ competition }}" />
                 <div>
@@ -316,7 +477,7 @@
                 <div><label>Wickets Lost</label><input type="number" name="first_wickets_lost" min="0" max="10" value="{{ form_values.first_wickets_lost }}" required /></div>
                 <div><label>Overs (e.g. 10.2)</label><input type="text" name="first_overs" value="{{ form_values.first_overs }}" required /></div>
                 <div class="full"><label>Runs in Last 5 Overs</label><input type="number" name="first_last_30_runs" min="0" value="{{ form_values.first_last_30_runs }}" required /></div>
-                <div class="full"><button type="submit">Predict Projected Score</button></div>
+                <div class="full"><button type="submit" onclick="window.__predictLoaderPreview(this.form)">Predict Projected Score</button></div>
             </form>
             {% if first_prediction %}
             <div class="ok" style="margin-top:10px;">
@@ -326,6 +487,41 @@
             <div class="ok" style="margin-top:10px;">
                 First Innings Confidence Band: <strong>{{ first_prediction.projection_low }}</strong> to <strong>{{ first_prediction.projection_high }}</strong>
             </div>
+            {% if second_prediction %}
+            <div class="ok" style="margin-top:10px;">
+                First Innings Projection Score: <strong>{{ first_prediction.projected_total }}</strong> |
+                Second Innings Projection Score: <strong>{{ second_prediction.projected_chase_total }}</strong>
+            </div>
+            {% endif %}
+            {% if first_prediction.rr_scenarios %}
+            <div class="rr-proj-card">
+                <p class="rr-proj-title">Projected Score <small>as per RR*</small></p>
+                <table class="rr-proj-table">
+                    <thead>
+                        <tr>
+                            <th>Run Rate</th>
+                            {% for s in first_prediction.rr_scenarios %}
+                            <th class="{% if s.is_current %}rr-proj-current{% endif %}">{{ '%.2f'|format(s.rr) }}{% if s.is_current %}*{% endif %}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>6 Overs</td>
+                            {% for s in first_prediction.rr_scenarios %}
+                            <td class="{% if s.is_current %}rr-proj-current{% endif %}">{{ s.score_6 }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td>20 Overs</td>
+                            {% for s in first_prediction.rr_scenarios %}
+                            <td class="{% if s.is_current %}rr-proj-current{% endif %}">{{ s.score_20 }}</td>
+                            {% endfor %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
             {% set ch_colors = team_colors.get(first_prediction.projected_chasing_team, {'primary':'#0b7a5a','secondary':'#34d399'}) %}
             {% set def_colors = team_colors.get(first_prediction.projected_defending_team, {'primary':'#334155','secondary':'#94a3b8'}) %}
             {% set ch_bg = ch_colors.primary %}
@@ -374,7 +570,7 @@
                     <img id="secondBowlingLogo" class="hero-logo" src="{{ team_logos.get(form_values.second_bowling_team, '') }}" alt="Second innings defending team logo" loading="lazy" onerror="this.style.visibility='hidden'; this.removeAttribute('src');" />
                 </div>
             </div>
-            <form method="POST" class="grid">
+            <form id="secondPredictionForm" method="POST" class="grid" onsubmit="return window.__predictLoaderSubmit(this, event)">
                 <input type="hidden" name="mode" value="second" />
                 <input type="hidden" name="competition" value="{{ competition }}" />
                 <input type="hidden" name="context_first_batting_team" id="context_first_batting_team" value="{{ form_values.first_batting_team }}" />
@@ -397,7 +593,7 @@
                 <div><label>Wickets Lost</label><input type="number" name="second_wickets_lost" min="0" max="10" value="{{ form_values.second_wickets_lost }}" required /></div>
                 <div><label>Overs</label><input type="text" name="second_overs" value="{{ form_values.second_overs }}" required /></div>
                 <div><label>Runs in Last 5 Overs</label><input type="number" name="second_last_30_runs" min="0" value="{{ form_values.second_last_30_runs }}" required /></div>
-                <div class="full"><button type="submit">Predict Win Probability</button></div>
+                <div class="full"><button type="submit" onclick="window.__predictLoaderPreview(this.form)">Predict Win Probability</button></div>
             </form>
             {% if second_prediction %}
             {% set chase_colors = team_colors.get(second_prediction.chasing_team, {'primary':'#0b7a5a','secondary':'#34d399'}) %}
@@ -423,8 +619,43 @@
                 {{ second_prediction.chasing_team }} Projected Chase Total: <strong>{{ second_prediction.projected_chase_total }}</strong>
             </div>
             <div class="ok" style="margin-top:10px;">
+                {% if first_prediction %}
+                First Innings Projection Score: <strong>{{ first_prediction.projected_total }}</strong> |
+                {% endif %}
+                Second Innings Projection Score: <strong>{{ second_prediction.projected_chase_total }}</strong>
+            </div>
+            <div class="ok" style="margin-top:10px;">
                 {{ second_prediction.chasing_team }} Chase Confidence Band: <strong>{{ second_prediction.projection_low }}</strong> to <strong>{{ second_prediction.projection_high }}</strong>
             </div>
+            {% if second_prediction.rr_scenarios %}
+            <div class="rr-proj-card">
+                <p class="rr-proj-title">Second Innings Projected Score <small>as per RR*</small></p>
+                <table class="rr-proj-table">
+                    <thead>
+                        <tr>
+                            <th>Run Rate</th>
+                            {% for s in second_prediction.rr_scenarios %}
+                            <th class="{% if s.is_current %}rr-proj-current{% endif %}">{{ '%.2f'|format(s.rr) }}{% if s.is_current %}*{% endif %}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>After 6 Overs</td>
+                            {% for s in second_prediction.rr_scenarios %}
+                            <td class="{% if s.is_current %}rr-proj-current{% endif %}">{{ s.score_6 }}</td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <td>At 20 Overs</td>
+                            {% for s in second_prediction.rr_scenarios %}
+                            <td class="{% if s.is_current %}rr-proj-current{% endif %}">{{ s.score_20 }}</td>
+                            {% endfor %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
             {% endif %}
             {% if show_analytics and chart_images and chart_images.second_innings_panel %}
             <div style="margin-top:12px;">
@@ -644,6 +875,115 @@
         </div>
         {% endif %}
     </div>
+    <div id="predictLoadingOverlay" class="predict-loading-overlay" aria-hidden="true">
+        <div class="predict-loading-stage">
+            <img
+                class="predict-loader-reference"
+                src="{{ url_for('static', filename='images/brand/Screenshot 2026-04-17 094204.png') }}"
+                alt="Prediction loading artwork"
+                loading="eager"
+            />
+            <div class="predict-static-mask predict-static-ball-mask" aria-hidden="true"></div>
+            <div class="predict-static-mask predict-static-bat-mask" aria-hidden="true"></div>
+            <div class="predict-anim-wrap" aria-hidden="true">
+                <img
+                    class="predict-real-sprite predict-ball-sprite"
+                    src="{{ url_for('static', filename='images/brand/Screenshot 2026-04-17 094204.png') }}"
+                    alt=""
+                    loading="eager"
+                />
+                <img
+                    class="predict-real-sprite predict-bat-sprite"
+                    src="{{ url_for('static', filename='images/brand/Screenshot 2026-04-17 094204.png') }}"
+                    alt=""
+                    loading="eager"
+                />
+            </div>
+            <div class="predict-loading-text">Loading surprise stats for you...</div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            function isPredictionForm(formEl) {
+                if (!formEl) return false;
+                const method = String(formEl.method || '').toLowerCase();
+                if (method !== 'post') return false;
+                const modeField = formEl.querySelector('input[name="mode"]');
+                return !!(modeField && (modeField.value === 'first' || modeField.value === 'second'));
+            }
+
+            function showOverlay() {
+                const overlay = document.getElementById('predictLoadingOverlay');
+                if (!overlay) return;
+                document.body.classList.add('predicting');
+                overlay.classList.add('active');
+                overlay.style.display = 'flex';
+                overlay.setAttribute('aria-hidden', 'false');
+            }
+
+            function markSubmitting(formEl) {
+                formEl.dataset.submitting = '1';
+                const submitBtn = formEl.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Predicting...';
+                }
+            }
+
+            window.startPredictionLoading = function (event, formEl) {
+                if (!isPredictionForm(formEl)) return true;
+                if (formEl.dataset.submitting === '1') return false;
+
+                if (event && typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                }
+
+                markSubmitting(formEl);
+                showOverlay();
+
+                requestAnimationFrame(function () {
+                    setTimeout(function () {
+                        formEl.submit();
+                    }, 110);
+                });
+
+                return false;
+            };
+
+            window.previewPredictionLoading = function (formEl) {
+                if (!isPredictionForm(formEl)) return;
+                showOverlay();
+            };
+
+            // Fallback: show overlay as soon as submit button is clicked.
+            document.addEventListener('click', function (event) {
+                const target = event.target;
+                if (!target || typeof target.closest !== 'function') return;
+                const submitBtn = target.closest('button[type="submit"], input[type="submit"]');
+                if (!submitBtn) return;
+                const formEl = submitBtn.form;
+                if (!isPredictionForm(formEl)) return;
+                showOverlay();
+            }, true);
+
+            // Fallback: if inline handlers are bypassed, force overlay + delayed submit.
+            document.addEventListener('submit', function (event) {
+                const formEl = event.target;
+                if (!isPredictionForm(formEl)) return;
+                if (formEl.dataset.submitting === '1') return;
+
+                event.preventDefault();
+                markSubmitting(formEl);
+                showOverlay();
+
+                requestAnimationFrame(function () {
+                    setTimeout(function () {
+                        formEl.submit();
+                    }, 110);
+                });
+            }, true);
+        })();
+    </script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <script>
         (function () {
@@ -859,6 +1199,14 @@
             applyTeamPillColorFix();
             updateMatchupHeroes();
 
+            const loadingOverlay = document.getElementById('predictLoadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+                loadingOverlay.style.removeProperty('display');
+                loadingOverlay.setAttribute('aria-hidden', 'true');
+            }
+            document.body.classList.remove('predicting');
+
             {% if did_submit %}
             const activeMode = {{ mode|tojson }};
             if (activeMode === 'second') {
@@ -951,6 +1299,8 @@
                         fontColor: '#dbe7f5',
                         axisColor: '#9fb3cc',
                         gridColor: '#2a3d55',
+                        legendBg: 'rgba(15,23,36,0.92)',
+                        legendBorder: '#3a4f69',
                     };
                 }
                 return {
@@ -959,6 +1309,8 @@
                     fontColor: '#1f2937',
                     axisColor: '#475467',
                     gridColor: '#d9e3ef',
+                    legendBg: 'rgba(255,255,255,0.84)',
+                    legendBorder: '#cbd5e1',
                 };
             }
 
@@ -971,6 +1323,15 @@
                     font: {
                         ...(layout.font || {}),
                         color: tTheme.fontColor,
+                    },
+                    legend: {
+                        ...(layout.legend || {}),
+                        bgcolor: tTheme.legendBg,
+                        bordercolor: tTheme.legendBorder,
+                        font: {
+                            ...((layout.legend || {}).font || {}),
+                            color: tTheme.fontColor,
+                        },
                     },
                 };
 
@@ -998,8 +1359,36 @@
                 return themed;
             }
 
+            const teamShortCodes = {
+                'ROYAL CHALLENGERS BENGALURU': 'RCB',
+                'ROYAL CHALLENGERS BANGALORE': 'RCB',
+                'MUMBAI INDIANS': 'MI',
+                'CHENNAI SUPER KINGS': 'CSK',
+                'KOLKATA KNIGHT RIDERS': 'KKR',
+                'DELHI CAPITALS': 'DC',
+                'SUNRISERS HYDERABAD': 'SRH',
+                'RAJASTHAN ROYALS': 'RR',
+                'PUNJAB KINGS': 'PBKS',
+                'GUJARAT TITANS': 'GT',
+                'LUCKNOW SUPER GIANTS': 'LSG'
+            };
+
+            function shortTeamName(teamName) {
+                const raw = String(teamName || '').trim();
+                if (!raw) return 'TEAM';
+                const upper = raw.toUpperCase();
+                if (teamShortCodes[upper]) return teamShortCodes[upper];
+                if (/^[A-Z]{2,5}$/.test(upper)) return upper;
+                const words = upper.split(/\s+/).filter(Boolean).filter((w) => !['THE', 'AND'].includes(w));
+                if (words.length >= 2) {
+                    return words.slice(0, 4).map((w) => w[0]).join('');
+                }
+                return upper.slice(0, 10);
+            }
+
             function legendName(teamCode) {
-                return `${teamFlags[teamCode] || '🏏'} ${teamCode}`;
+                const short = shortTeamName(teamCode);
+                return `${teamFlags[short] || '🏏'} ${short}`;
             }
 
             function segmented(curve, splitIdx) {
@@ -1027,7 +1416,7 @@
             }
 
             function lockAxes(layout) {
-                const out = {...layout, dragmode: false, hovermode: 'x unified'};
+                const out = {...layout, dragmode: false, hovermode: 'closest'};
                 if (out.xaxis) out.xaxis = {...out.xaxis, fixedrange: true};
                 if (out.yaxis) out.yaxis = {...out.yaxis, fixedrange: true};
                 if (out.yaxis2) out.yaxis2 = {...out.yaxis2, fixedrange: true};
@@ -1060,6 +1449,9 @@
                     paper_bgcolor: tTheme.paperBg,
                     plot_bgcolor: tTheme.plotBg,
                     'font.color': tTheme.fontColor,
+                    'legend.bgcolor': tTheme.legendBg,
+                    'legend.bordercolor': tTheme.legendBorder,
+                    'legend.font.color': tTheme.fontColor,
                     'xaxis.color': tTheme.axisColor,
                     'xaxis.gridcolor': tTheme.gridColor,
                     'xaxis.zerolinecolor': tTheme.gridColor,
@@ -1110,8 +1502,18 @@
             const commonLayout = {
                 paper_bgcolor: '#ffffff',
                 plot_bgcolor: '#f8fafc',
-                margin: {l: 45, r: 25, t: 30, b: 35},
-                font: {family: 'Segoe UI, sans-serif', size: 11, color: '#1f2937'}
+                margin: {l: 45, r: 10, t: 30, b: 35},
+                font: {family: 'Segoe UI, sans-serif', size: 11, color: '#1f2937'},
+                legend: {
+                    x: 0.01,
+                    y: 0.99,
+                    xanchor: 'left',
+                    yanchor: 'top',
+                    bgcolor: 'rgba(255,255,255,0.82)',
+                    bordercolor: '#cbd5e1',
+                    borderwidth: 1,
+                    font: {size: 10}
+                }
             };
 
             const overRuns1 = chartData.score_progression.first.map((v, i, arr) => i === 0 ? 0 : Math.max(0, v - arr[i - 1]));
@@ -1144,8 +1546,8 @@
                 {x: overs, y: segmentedProj(chartData.score_progression.first, firstIdx), mode: 'lines', name: legendName(t.first_batting) + ' Score Proj', line: {color: c1.secondary, width: 2, dash: 'dash'}, hovertemplate: 'Over %{x}<br>Proj Runs %{y:.1f}<extra></extra>'},
                 {x: overs, y: segmented(chartData.wickets.first, firstIdx), mode: 'lines', name: legendName(t.first_batting) + ' Wkts', yaxis: 'y2', line: {color: c1.dark, width: 2, shape: 'hv'}, hovertemplate: 'Over %{x}<br>Wkts %{y:.0f}<extra></extra>'},
                 {x: overs, y: segmentedProj(chartData.wickets.first, firstIdx), mode: 'lines', name: legendName(t.first_batting) + ' Wkts Proj', yaxis: 'y2', line: {color: c1.secondary, width: 1.6, dash: 'dot', shape: 'hv'}, hovertemplate: 'Over %{x}<br>Proj Wkts %{y:.0f}<extra></extra>'},
-                {x: wk1.x, y: wk1.y, yaxis: 'y2', mode: 'markers+text', text: wk1.x.map(() => 'W'), textposition: 'top center', name: legendName(t.first_batting) + ' Wicket Fall', marker: {size: 10, color: c1.primary, line: {color: '#ffffff', width: 1}}, hovertemplate: 'Wicket at over %{x}<br>Total wickets %{y:.0f}<extra></extra>'}
-                ,{x: [firstOversNow], y: [firstWkNow], yaxis: 'y2', mode: 'markers+text', text: ['Current'], textposition: 'bottom right', name: 'Current Wickets', marker: {size: 10, color: '#111827', symbol: 'diamond'}, hovertemplate: 'Current: ' + firstWkNow.toFixed(0) + ' wickets at ' + firstOversNow.toFixed(2) + ' overs<extra></extra>'}
+                {x: wk1.x, y: wk1.y, yaxis: 'y2', mode: 'markers+text', text: wk1.x.map(() => 'W'), textposition: 'top center', name: legendName(t.first_batting) + ' Wicket Fall', showlegend: false, marker: {size: 10, color: c1.primary, line: {color: '#ffffff', width: 1}}, hovertemplate: 'Wicket at over %{x}<br>Total wickets %{y:.0f}<extra></extra>'}
+                ,{x: [firstOversNow], y: [firstWkNow], yaxis: 'y2', mode: 'markers+text', text: ['Current'], textposition: 'bottom right', name: 'Current Wickets', showlegend: false, marker: {size: 10, color: '#111827', symbol: 'diamond'}, hovertemplate: 'Current: ' + firstWkNow.toFixed(0) + ' wickets at ' + firstOversNow.toFixed(2) + ' overs<extra></extra>'}
             ], {
                 ...commonLayout,
                 title: {text: 'First Innings Analytics', x: 0.02, xanchor: 'left'},
@@ -1290,10 +1692,10 @@
                 renderOrFallback('wicketsPlotly', 'wicketsFallback', [
                     {x: overs, y: chartData.wickets.first, mode: 'lines', name: legendName(t.first_batting) + ' Wickets', line: {color: c1.primary, width: 2.6, shape: 'hv'}, hovertemplate: 'Over %{x}<br>' + t.first_batting + ' Wkts %{y:.0f}<extra></extra>'},
                     {x: overs, y: chartData.wickets.second, mode: 'lines', name: legendName(t.second_batting) + ' Wickets', line: {color: c2.primary, width: 2.6, shape: 'hv'}, hovertemplate: 'Over %{x}<br>' + t.second_batting + ' Wkts %{y:.0f}<extra></extra>'},
-                    {x: wk1.x, y: wk1.y, mode: 'markers+text', text: wk1.x.map(() => 'W'), textposition: 'top center', name: legendName(t.first_batting) + ' Wicket Falls', marker: {size: 9, color: c1.primary, line: {color: '#fff', width: 1}}, hovertemplate: t.first_batting + ' wicket at over %{x}<br>Total wickets %{y:.0f}<extra></extra>'},
-                    {x: wk2.x, y: wk2.y, mode: 'markers+text', text: wk2.x.map(() => 'W'), textposition: 'bottom center', name: legendName(t.second_batting) + ' Wicket Falls', marker: {size: 9, color: c2.primary, line: {color: '#fff', width: 1}}, hovertemplate: t.second_batting + ' wicket at over %{x}<br>Total wickets %{y:.0f}<extra></extra>'},
-                    {x: [firstOversNow], y: [firstWkNow], mode: 'markers+text', text: ['Current-1st'], textposition: 'top left', name: 'Current 1st Inn Wkts', marker: {size: 10, color: '#111827', symbol: 'diamond'}, hovertemplate: 'Current 1st innings: ' + firstWkNow.toFixed(0) + ' wickets at ' + firstOversNow.toFixed(2) + ' overs<extra></extra>'},
-                    {x: [secondOversNow], y: [secondWkNow], mode: 'markers+text', text: ['Current-2nd'], textposition: 'bottom right', name: 'Current 2nd Inn Wkts', marker: {size: 10, color: '#334155', symbol: 'diamond'}, hovertemplate: 'Current 2nd innings: ' + secondWkNow.toFixed(0) + ' wickets at ' + secondOversNow.toFixed(2) + ' overs<extra></extra>'}
+                    {x: wk1.x, y: wk1.y, mode: 'markers+text', text: wk1.x.map(() => 'W'), textposition: 'top center', name: legendName(t.first_batting) + ' Wicket Falls', showlegend: false, marker: {size: 9, color: c1.primary, line: {color: '#fff', width: 1}}, hovertemplate: t.first_batting + ' wicket at over %{x}<br>Total wickets %{y:.0f}<extra></extra>'},
+                    {x: wk2.x, y: wk2.y, mode: 'markers+text', text: wk2.x.map(() => 'W'), textposition: 'bottom center', name: legendName(t.second_batting) + ' Wicket Falls', showlegend: false, marker: {size: 9, color: c2.primary, line: {color: '#fff', width: 1}}, hovertemplate: t.second_batting + ' wicket at over %{x}<br>Total wickets %{y:.0f}<extra></extra>'},
+                    {x: [firstOversNow], y: [firstWkNow], mode: 'markers+text', text: ['Current-1st'], textposition: 'top left', name: 'Current 1st Inn Wkts', showlegend: false, marker: {size: 10, color: '#111827', symbol: 'diamond'}, hovertemplate: 'Current 1st innings: ' + firstWkNow.toFixed(0) + ' wickets at ' + firstOversNow.toFixed(2) + ' overs<extra></extra>'},
+                    {x: [secondOversNow], y: [secondWkNow], mode: 'markers+text', text: ['Current-2nd'], textposition: 'bottom right', name: 'Current 2nd Inn Wkts', showlegend: false, marker: {size: 10, color: '#334155', symbol: 'diamond'}, hovertemplate: 'Current 2nd innings: ' + secondWkNow.toFixed(0) + ' wickets at ' + secondOversNow.toFixed(2) + ' overs<extra></extra>'}
                 ], {
                     ...commonLayout,
                     xaxis: {title: 'Overs', range: [0, 20]},

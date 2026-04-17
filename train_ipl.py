@@ -14,6 +14,7 @@ os.environ.setdefault("CRICKET_TRAIN_PROFILE", "balanced")
 from src.logger import get_logger
 from src.pipeline.full_train_pipeline import FullTrainPipeline
 from src.utils.common import save_json
+from src.utils.mlflow_tracker import log_training_run
 
 
 logger = get_logger(__name__)
@@ -202,6 +203,13 @@ if __name__ == "__main__":
     pipeline = FullTrainPipeline()
     full_result = pipeline.run(source_path)
     simple_result = export_simple_artifacts(full_result, csv_files)
+    log_training_run(
+        competition="ipl",
+        source_dataset=Path(source_path),
+        source_files=csv_files,
+        full_result=full_result,
+        simple_result=simple_result,
+    )
     logger.info("Training summary (IPL full): %s", full_result)
     logger.info("Exported IPL simple artifacts: %s", simple_result)
     print("IPL training completed")

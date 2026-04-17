@@ -1,0 +1,6 @@
+# Speed up DVC workspace scans
+.venv/
+__pycache__/
+logs/
+mlruns/
+.ipynb_checkpoints/

@@ -1,0 +1,38 @@
+{
+  "first_innings": {
+    "best_model": "linear_regression",
+    "selection_metric": "lowest_test_rmse",
+    "best_test_rmse": 21.627080828110525
+  },
+  "second_innings": {
+    "best_model": "xgboost_classifier",
+    "selection_metric": "highest_calibrated_test_roc_auc_then_lowest_calibrated_test_brier",
+    "best_calibrated_test_roc_auc": 0.8663727382430572,
+    "best_calibrated_test_brier": 0.15043897026181488
+  },
+  "second_innings_score": {
+    "best_model": "xgboost_regressor",
+    "selection_metric": "lowest_test_rmse",
+    "best_test_rmse": 17.23557992465872
+  },
+  "leakage_guard": {
+    "second_innings_auc_too_high": false,
+    "message": "Re-check leakage if calibrated_test_roc_auc is too close to 1.0."
+  },
+  "models_compared": {
+    "classification": [
+      "logistic_regression",
+      "xgboost_classifier"
+    ],
+    "regression": [
+      "linear_regression",
+      "xgboost_regressor"
+    ]
+  },
+  "feature_importance_files": {
+    "first_innings": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\dual\\first_innings_feature_importance.csv",
+    "second_innings": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\dual\\second_innings_feature_importance.csv",
+    "second_innings_score": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\dual\\second_innings_score_feature_importance.csv"
+  },
+  "xgboost_available": true
+}

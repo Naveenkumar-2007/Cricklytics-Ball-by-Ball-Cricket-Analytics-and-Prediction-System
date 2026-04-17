@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/navee/Downloads/cricket_score_predictor-main/mlruns/404399914518938663/9105449611cd460bae208773c1cd6af4/artifacts
+end_time: 1776364705939
+entry_point_name: ''
+experiment_id: '404399914518938663'
+lifecycle_stage: active
+run_id: 9105449611cd460bae208773c1cd6af4
+run_name: international-train-20260416-183825
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1776364705755
+status: 3
+tags: []
+user_id: navee
