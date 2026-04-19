@@ -1,0 +1,9 @@
+{
+  "raw_dataset": "artifacts\\raw_dataset.csv",
+  "processed_dataset": "artifacts\\processed_dataset.csv",
+  "train": "artifacts\\train.csv",
+  "test": "artifacts\\test.csv",
+  "preprocessor": "artifacts\\preprocessor.pkl",
+  "model": "artifacts\\model.pkl",
+  "metrics": "artifacts\\metrics.json"
+}

@@ -1,15 +1,74 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 from src.logger import get_logger
 
 
 logger = get_logger(__name__)
+
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _default_tracking_uri() -> str:
+    # Use a stable absolute path so MLflow logs do not depend on current working directory.
+    return (_project_root() / "mlruns").resolve().as_uri()
+
+
+def _as_metric_number(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, (int, float)):
+        number = float(value)
+        return number if math.isfinite(number) else None
+    return None
+
+
+def _flatten_numeric_metrics(value: Any, prefix: str, out: Dict[str, float], depth: int = 0) -> None:
+    if depth > 6:
+        return
+
+    number = _as_metric_number(value)
+    if number is not None:
+        if prefix:
+            out[prefix] = number
+        return
+
+    if isinstance(value, dict):
+        for key, item in value.items():
+            key_text = str(key).strip().replace(" ", "_")
+            if not key_text:
+                continue
+            next_prefix = f"{prefix}.{key_text}" if prefix else key_text
+            _flatten_numeric_metrics(item, next_prefix, out, depth + 1)
+        return
+
+    if isinstance(value, (list, tuple)):
+        for idx, item in enumerate(value):
+            next_prefix = f"{prefix}.{idx}" if prefix else str(idx)
+            _flatten_numeric_metrics(item, next_prefix, out, depth + 1)
+
+
+def _extract_numeric_metrics_from_json(path: Path, prefix: str) -> Dict[str, float]:
+    if not path.exists() or not path.is_file():
+        return {}
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except Exception:
+        return {}
+
+    metrics: Dict[str, float] = {}
+    _flatten_numeric_metrics(payload, prefix, metrics)
+    return metrics
 
 
 def _extract_dual_summary_values(summary_path: Path) -> Tuple[Dict[str, str], Dict[str, float]]:
@@ -93,9 +152,9 @@ def log_training_run(
         logger.info("MLflow is not available. Skipping experiment tracking.")
         return False
 
-    tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "").strip()
-    if tracking_uri:
-        mlflow.set_tracking_uri(tracking_uri)
+    tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "").strip() or _default_tracking_uri()
+    mlflow.set_tracking_uri(tracking_uri)
+    logger.info("MLflow tracking URI: %s", tracking_uri)
 
     experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "Cricklytics")
     mlflow.set_experiment(experiment_name)
@@ -115,6 +174,7 @@ def log_training_run(
         "max_tuning_rows": os.getenv("CRICKET_MAX_TUNING_ROWS", ""),
         "source_file_count": str(len(source_files)),
         "source_dataset": str(source_dataset),
+        "tracking_uri": tracking_uri,
         **summary_params,
     }
 
@@ -126,12 +186,22 @@ def log_training_run(
         "competition": competition,
     }
 
+    auto_metrics: Dict[str, float] = {}
+    _flatten_numeric_metrics(full_result, "full_result", auto_metrics)
+    _flatten_numeric_metrics(simple_result, "simple_result", auto_metrics)
+
+    summary_metrics_path = Path(full_result.get("summary_metrics", "")) if full_result.get("summary_metrics") else Path()
+    simple_metrics_path = Path(simple_result.get("metrics", "")) if simple_result.get("metrics") else Path()
+    auto_metrics.update(_extract_numeric_metrics_from_json(summary_metrics_path, "summary_json"))
+    auto_metrics.update(_extract_numeric_metrics_from_json(simple_metrics_path, "simple_json"))
+    auto_metrics.update(summary_metrics)
+
     try:
         with mlflow.start_run(run_name=run_name):
             mlflow.set_tags(tags)
             mlflow.log_params(params)
-            if summary_metrics:
-                mlflow.log_metrics(summary_metrics)
+            if auto_metrics:
+                mlflow.log_metrics(auto_metrics)
 
             mlflow.log_dict(full_result, "full_train_result.json")
             mlflow.log_dict(simple_result, "simple_artifact_result.json")
@@ -142,5 +212,5 @@ def log_training_run(
         logger.info("MLflow logging completed for competition=%s", competition)
         return True
     except Exception as exc:
-        logger.warning("MLflow logging failed: %s", exc)
+        logger.warning("MLflow logging failed: %s", exc, exc_info=True)
         return False

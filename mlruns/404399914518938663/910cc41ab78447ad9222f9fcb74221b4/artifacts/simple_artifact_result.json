@@ -1,9 +1,0 @@
-{
-  "raw_dataset": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\raw_dataset.csv",
-  "processed_dataset": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\processed_dataset.csv",
-  "train": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\train.csv",
-  "test": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\test.csv",
-  "preprocessor": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\preprocessor.pkl",
-  "model": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\model.pkl",
-  "metrics": "C:\\Users\\navee\\Downloads\\cricket_score_predictor-main\\artifacts\\ipl\\metrics.json"
-}

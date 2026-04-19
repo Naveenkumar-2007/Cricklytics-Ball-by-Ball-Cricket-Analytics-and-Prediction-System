@@ -1,0 +1,9 @@
+{
+  "raw_dataset": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\raw_dataset.csv",
+  "processed_dataset": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\processed_dataset.csv",
+  "train": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\train.csv",
+  "test": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\test.csv",
+  "preprocessor": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\preprocessor.pkl",
+  "model": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\model.pkl",
+  "metrics": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\metrics.json"
+}

@@ -1,0 +1,19 @@
+{
+  "source_dataset": "artifacts\\combined_worldcup_deliveries.csv",
+  "full_context_path": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\full_context.csv",
+  "first_innings_train": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\first_innings_train.csv",
+  "first_innings_test": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\first_innings_test.csv",
+  "second_innings_train": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\second_innings_train.csv",
+  "second_innings_test": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\second_innings_test.csv",
+  "second_innings_score_train": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\second_innings_score_train.csv",
+  "second_innings_score_test": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\second_innings_score_test.csv",
+  "first_best_model": "xgboost_regressor",
+  "second_best_model": "logistic_regression",
+  "second_score_best_model": "xgboost_regressor",
+  "first_model_leaderboard": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\first_innings_model_leaderboard.csv",
+  "second_model_leaderboard": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\second_innings_model_leaderboard.csv",
+  "second_score_model_leaderboard": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\second_innings_score_model_leaderboard.csv",
+  "summary_metrics": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\dual_model_summary.json",
+  "simulation_csv": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\ball_by_ball_simulation.csv",
+  "charts_dir": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\dual\\charts"
+}

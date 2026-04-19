@@ -2,7 +2,7 @@
 title: Cricklytics
 emoji: 🏏
 colorFrom: blue
-colorTo: cyan
+colorTo: blue
 sdk: docker
 app_port: 7860
 pinned: false
@@ -119,6 +119,34 @@ Core files:
 - [dvc.yaml](dvc.yaml)
 - [params.yaml](params.yaml)
 - [scripts/dvc_train.py](scripts/dvc_train.py)
+
+### MLflow quick start (Windows)
+
+Run training first so runs get written:
+
+```powershell
+.\.venv\Scripts\python.exe train.py
+# or
+.\.venv\Scripts\python.exe train_ipl.py
+```
+
+Start MLflow UI against the same local store:
+
+```powershell
+.\.venv\Scripts\python.exe -m mlflow ui --backend-store-uri "file:./mlruns" --port 5000
+```
+
+Open:
+
+```text
+http://127.0.0.1:5000
+```
+
+If you want to set it once for your shell session:
+
+```powershell
+$env:MLFLOW_TRACKING_URI = "file:./mlruns"
+```
 
 ### One-time setup
 

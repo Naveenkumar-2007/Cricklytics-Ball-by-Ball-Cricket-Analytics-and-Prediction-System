@@ -1,0 +1,20 @@
+{
+  "pipeline": "dual_leakage_safe",
+  "competition": "ipl",
+  "training_source_files": [
+    "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\IPL.csv"
+  ],
+  "effective_training_dataset": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\ipl_standardized.csv",
+  "exported_for_simple_flow": {
+    "train": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\train.csv",
+    "test": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\test.csv",
+    "preprocessor": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\preprocessor.pkl",
+    "model": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\model.pkl"
+  },
+  "second_innings_best": {
+    "best_model": "logistic_regression",
+    "selection_metric": "highest_calibrated_test_roc_auc_then_lowest_calibrated_test_brier",
+    "best_calibrated_test_roc_auc": 0.8660735457575532,
+    "best_calibrated_test_brier": 0.15179796368207746
+  }
+}

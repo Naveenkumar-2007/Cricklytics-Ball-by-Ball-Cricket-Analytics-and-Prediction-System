@@ -1,0 +1,38 @@
+{
+  "first_innings": {
+    "best_model": "linear_regression",
+    "selection_metric": "lowest_test_rmse",
+    "best_test_rmse": 21.6270842395159
+  },
+  "second_innings": {
+    "best_model": "logistic_regression",
+    "selection_metric": "highest_calibrated_test_roc_auc_then_lowest_calibrated_test_brier",
+    "best_calibrated_test_roc_auc": 0.8660735457575532,
+    "best_calibrated_test_brier": 0.15179796368207746
+  },
+  "second_innings_score": {
+    "best_model": "xgboost_regressor",
+    "selection_metric": "lowest_test_rmse",
+    "best_test_rmse": 17.23557992465872
+  },
+  "leakage_guard": {
+    "second_innings_auc_too_high": false,
+    "message": "Re-check leakage if calibrated_test_roc_auc is too close to 1.0."
+  },
+  "models_compared": {
+    "classification": [
+      "logistic_regression",
+      "xgboost_classifier"
+    ],
+    "regression": [
+      "linear_regression",
+      "xgboost_regressor"
+    ]
+  },
+  "feature_importance_files": {
+    "first_innings": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\dual\\first_innings_feature_importance.csv",
+    "second_innings": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\dual\\second_innings_feature_importance.csv",
+    "second_innings_score": "C:\\Users\\navee\\Cisco Packet Tracer 8.2.2\\saves\\cricket\\artifacts\\ipl\\dual\\second_innings_score_feature_importance.csv"
+  },
+  "xgboost_available": true
+}

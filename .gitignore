@@ -64,6 +64,17 @@ logs/*.log
 # =========================
 artifacts/**
 !artifacts/.gitkeep
+!artifacts/dual/
+!artifacts/dual/full_context.csv
+!artifacts/dual/first_innings_model.pkl
+!artifacts/dual/second_innings_model.pkl
+!artifacts/dual/second_innings_score_model.pkl
+!artifacts/ipl/
+!artifacts/ipl/dual/
+!artifacts/ipl/dual/full_context.csv
+!artifacts/ipl/dual/first_innings_model.pkl
+!artifacts/ipl/dual/second_innings_model.pkl
+!artifacts/ipl/dual/second_innings_score_model.pkl
 
 # Optional local exports / temp files
 *.tmp
