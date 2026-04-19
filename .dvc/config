@@ -1,0 +1,4 @@
+[core]
+    remote = dagshub
+['remote "dagshub"']
+    url = https://dagshub.com/Naveenkumar-2007/Cricklytics-Ball-by-Ball-Cricket-Analytics-and-Prediction-System.dvc
