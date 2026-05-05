@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: mit
-short_description: Real-time Institutional Cricket Score Prediction and Analytics
+short_description: Real-time cricket score prediction and analytics
 ---
 
 <div align="center">
