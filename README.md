@@ -11,7 +11,8 @@ short_description: Real-time cricket score prediction and analytics
 ---
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Naveenkumar-2007/Cricklytics-Ball-by-Ball-Cricket-Analytics-and-Prediction-System/main/static/images/brand/ipl-official.png" alt="IPL Logo" width="150"/>
+  <img src="static/images/brand/icc-t20wc-2026-trim.png" alt="ICC Logo" width="150" style="margin-right: 20px;"/>
+  <img src="static/images/brand/ipl-official.png" alt="IPL Logo" width="150"/>
   <h1>🏏 Cricklytics: Institutional Analytics Engine</h1>
   <p><strong>Ball-by-Ball Live Predictions, Automated MLOps, & Cloud Dashboards</strong></p>
 </div>
@@ -21,13 +22,17 @@ short_description: Real-time cricket score prediction and analytics
 ## 📊 Live 2026 Season MLOps Dashboards
 Cricklytics utilizes **Random Forest Classification** and **GridSearchCV Hyperparameter Tuning** to prevent overfitting while generating beautiful, high-fidelity sports analytics. The charts below are auto-generated from our ML pipeline.
 
+### 🌍 International T20 (2016-2024) Analytics
+![International Training Monitor](artifacts/training_monitor_international.png)
+
 ### 🏆 2026 IPL Current Season Analytics
-![2026 Training Monitor](https://raw.githubusercontent.com/Naveenkumar-2007/Cricklytics-Ball-by-Ball-Cricket-Analytics-and-Prediction-System/main/artifacts/ipl/training_monitor_2026.png)
+![2026 Training Monitor](artifacts/ipl/training_monitor_2026.png)
 
 ### 📈 2008-2025 Historical Baseline Performance
-![Historical Monitor](https://raw.githubusercontent.com/Naveenkumar-2007/Cricklytics-Ball-by-Ball-Cricket-Analytics-and-Prediction-System/main/artifacts/ipl/training_monitor_historical.png)
+![Historical Monitor](artifacts/ipl/training_monitor_historical.png)
 
 ---
+
 
 ## ⚙️ Automated Cloud CI/CD Architecture
 This system features a full **Zero-Touch MLOps Pipeline** connected directly to Hugging Face Spaces and DAGsHub (MLflow & DVC):

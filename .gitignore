@@ -66,6 +66,7 @@ artifacts/**
 !artifacts/.gitkeep
 !artifacts/ipl/*.png
 !artifacts/ipl/*.json
+!artifacts/*.png
 !artifacts/*.json
 !artifacts/dual/*.json
 !artifacts/dual/
