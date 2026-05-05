@@ -190,13 +190,16 @@
     </div>
 
     <script>
-        document.getElementById('uploadForm').addEventListener('submit', function() {
-            const btn = document.getElementById('submitBtn');
-            const loader = document.getElementById('loader');
-            btn.querySelector('span').textContent = 'Training Model in Cloud... Please Wait...';
-            btn.disabled = true;
-            loader.style.display = 'block';
-        });
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function() {
+                const btn = document.getElementById('submitBtn');
+                const loader = document.getElementById('loader');
+                btn.querySelector('span').textContent = 'Training Model in Cloud... Please Wait...';
+                btn.disabled = true;
+                loader.style.display = 'block';
+            });
+        }
     </script>
 </body>
 </html>
