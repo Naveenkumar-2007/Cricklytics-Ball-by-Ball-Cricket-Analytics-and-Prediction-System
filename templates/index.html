@@ -419,14 +419,20 @@
                 {% endif %}
                 </div>
                 <form method="GET" class="competition-switch" aria-label="Competition selector">
-                    <button class="competition-pill {% if competition == 'international' %}active{% endif %}" type="submit" name="competition" value="international">International</button>
                     <button class="competition-pill {% if competition == 'ipl' %}active{% endif %}" type="submit" name="competition" value="ipl">IPL</button>
+                    <button class="competition-pill {% if competition == 'international' %}active{% endif %}" type="submit" name="competition" value="international">International</button>
                 </form>
                 <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">Dark Mode</button>
             </div>
         </div>
-        <div class="card" style="padding:10px 14px;">
-            <strong>Active Competition:</strong> {{ competition_label }}
+        <div class="card" style="padding:10px 14px; display: flex; align-items: center; justify-content: space-between;">
+            <div><strong>Active Competition:</strong> {{ competition_label }}</div>
+            {% if competition == 'ipl' %}
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="/tournament-prediction" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 800; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2); white-space: nowrap;">🏆 2008-2025 Historical Prediction</a>
+                <a href="/current-2026-prediction" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; padding: 6px 14px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 800; box-shadow: 0 4px 6px rgba(14, 165, 233, 0.2); white-space: nowrap;">📈 2026 Current Data Prediction</a>
+            </div>
+            {% endif %}
         </div>
 
         {% if not artifacts_ready %}

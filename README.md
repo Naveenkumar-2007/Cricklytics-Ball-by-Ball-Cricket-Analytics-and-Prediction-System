@@ -1,22 +1,50 @@
 ---
-title: Cricklytics
+title: Cricklytics MLOps Dashboard
 emoji: 🏏
 colorFrom: blue
-colorTo: blue
+colorTo: indigo
 sdk: docker
 app_port: 7860
 pinned: false
 license: mit
-short_description: Cricket score prediction and analytics
+short_description: Real-time Institutional Cricket Score Prediction and Analytics
 ---
 
-# Cricklytics: Ball-by-Ball Cricket Analytics and Prediction System
+<div align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/84/Indian_Premier_League_Official_Logo.svg/1200px-Indian_Premier_League_Official_Logo.svg.png" alt="IPL Logo" width="150"/>
+  <h1>🏏 Cricklytics: Institutional Analytics Engine</h1>
+  <p><strong>Ball-by-Ball Live Predictions, Automated MLOps, & Cloud Dashboards</strong></p>
+</div>
 
-Production-style cricket analytics platform built on ball-by-ball data for two competition modes:
-- International T20 (World Cup style datasets)
-- IPL
+---
 
-The system trains dual pipelines and serves real-time match intelligence through a Flask web app.
+## 📊 Live 2026 Season MLOps Dashboards
+Cricklytics utilizes **Random Forest Classification** and **GridSearchCV Hyperparameter Tuning** to prevent overfitting while generating beautiful, high-fidelity sports analytics. The charts below are auto-generated from our ML pipeline.
+
+### 🏆 2026 IPL Current Season Analytics
+![2026 Training Monitor](artifacts/ipl/training_monitor_2026.png)
+
+### 📈 2008-2025 Historical Baseline Performance
+![Historical Monitor](artifacts/ipl/training_monitor_historical.png)
+
+---
+
+## ⚙️ Automated Cloud CI/CD Architecture
+This system features a full **Zero-Touch MLOps Pipeline** connected directly to Hugging Face Spaces and DAGsHub (MLflow & DVC):
+
+1. **Secure Admin Portal (`/admin`)**: Upload the daily updated `2026_Data_IPL.csv` from any browser.
+2. **Auto-Trigger Training**: The Flask server automatically parses the new data, triggers the Random Forest ML pipeline, and logs all metrics (Accuracy, Precision, Recall, F1) securely to DAGsHub via the `MLFLOW_TRACKING_URI`.
+3. **Instant Dashboard Refresh**: The website dynamically rebuilds the charts above with mathematical precision.
+4. **GitHub Actions Integration**: Pushing code to GitHub triggers the `.github/workflows/deploy.yml` CI/CD script, perfectly syncing the repo with Hugging Face Spaces.
+
+---
+
+### Core Capabilities
+
+- **Institutional Web Portal**: Toggle between International T20 History and IPL 2026 Live.
+- **MLflow Tracking**: Integrated experiment tracking.
+- **Ball-by-Ball Simulation**: Calculates live 1st/2nd innings run projections and win probability.
+- **Data Integrity**: Perfect chronological wicket extraction using recursive forward-filling.
 
 ## Why This Project
 

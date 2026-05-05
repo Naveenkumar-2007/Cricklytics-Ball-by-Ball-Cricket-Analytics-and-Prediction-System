@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }} - Cricklytics</title>
+    <!-- Plotly CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --bg-main: radial-gradient(circle at top right, #eef8ff 0%, #f6f8fb 45%, #f3f9f6 100%);
+            --text-main: #1d2b36;
+            --card-bg: #ffffff;
+            --card-border: #dde3ea;
+            --card-shadow: 0 8px 20px rgba(15, 41, 64, 0.06);
+            --input-bg: #ffffff;
+            --input-border: #c9d3de;
+            --muted-text: #64748b;
+        }
+
+        body.dark-mode {
+            --bg-main: radial-gradient(circle at top right, #0b1420 0%, #0a1018 55%, #0a0f16 100%);
+            --text-main: #d8e2ef;
+            --card-bg: #111b28;
+            --card-border: #25364b;
+            --card-shadow: 0 10px 24px rgba(2, 6, 14, 0.35);
+            --input-bg: #0f1724;
+            --input-border: #2a3a4f;
+            --muted-text: #8fa2bd;
+        }
+
+        body { font-family: Segoe UI, Arial, sans-serif; margin: 0; background: var(--bg-main); color: var(--text-main); }
+        .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 24px; margin-bottom: 24px; box-shadow: var(--card-shadow); text-align: center; }
+        
+        h1, h2, h3 { margin-top: 0; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+        .brand-wrap { display: flex; align-items: center; gap: 10px; }
+        .brand-title { margin: 0; font-size: 1.45rem; font-weight: 700; color: inherit; }
+        .main-brand-logo { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border: 1px solid #c9d3de; }
+        .btn { padding: 10px 16px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; background: #0b7a5a; color: #fff; }
+        
+        .chart-img { max-width: 100%; border-radius: 10px; margin-top: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        
+        .predictions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 30px; text-align: left; }
+        .team-card { background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; padding: 16px; display: flex; align-items: center; justify-content: space-between; }
+        .team-card-inner { display: flex; align-items: center; gap: 10px; }
+        .team-color-box { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        .team-logo { width: 28px; height: 28px; object-fit: contain; }
+        .team-name { font-weight: bold; font-size: 1.1em; }
+        .team-prob { font-size: 1.2em; font-weight: bold; color: #0b7a5a; }
+        body.dark-mode .team-prob { color: #34d399; }
+        
+        .plotly-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .plotly-chart-container {
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--input-bg);
+            padding: 5px;
+        }
+        @media (max-width: 900px) {
+            .plotly-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="wrap">
+        <div class="topbar">
+            <div class="brand-wrap">
+                <img class="main-brand-logo" src="{{ main_logo_url }}" alt="Cricklytics logo" />
+                <h1 class="brand-title">{{ title }}</h1>
+            </div>
+            <div>
+                <a href="/?competition=ipl" class="btn">Back to Home</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Tournament Winner Prediction Chart</h2>
+            <p style="color: var(--muted-text);">{{ desc }}</p>
+            
+            <img class="chart-img" src="data:image/png;base64,{{ data.chart_base64 }}" alt="Winning Probability Chart" />
+            
+            <div class="predictions-grid">
+                {% for item in data.predictions %}
+                <div class="team-card" style="border-left: 4px solid {{ item.color }};">
+                    <div class="team-card-inner">
+                        <div class="team-color-box" style="background-color: {{ item.color }};">
+                            {% if item.logo %}
+                            <img src="{{ item.logo }}" class="team-logo" alt="{{ item.team }}">
+                            {% endif %}
+                        </div>
+                        <span class="team-name">{{ item.team }}</span>
+                    </div>
+                    <span class="team-prob">{{ item.probability }}%</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if data.analytics_chart_base64 %}
+        <div class="card" style="margin-top: 30px;">
+            <h2>Dataset Analytics Overview</h2>
+            <p style="color: var(--muted-text);">Comprehensive data visualization derived directly from the underlying training dataset.</p>
+            <img class="chart-img" src="data:image/png;base64,{{ data.analytics_chart_base64 }}" alt="Data Analytics Overview Grid" style="width: 100%; border-radius: 12px; border: 1px solid var(--card-border);" />
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

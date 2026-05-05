@@ -8,6 +8,9 @@ import os
 import json
 import hashlib
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from src.logger import get_logger
 from src.pipeline.realtime_engine import FirstInningsState, RealtimeEngine, SecondInningsState
@@ -974,12 +977,103 @@ def _build_chart_images(chart_data):
     return images
 
 
+@app.route("/tournament-prediction")
+def tournament_prediction():
+    import json
+    from pathlib import Path
+    pred_path = Path("artifacts/ipl/tournament_winner_prediction.json")
+    if not pred_path.exists():
+        return "Predictions not found. Please train the model first.", 404
+    
+    with open(pred_path, "r") as f:
+        data = json.load(f)
+        
+    return render_template(
+        "tournament_prediction.html",
+        data=data,
+        main_logo_url=MAIN_WEBSITE_LOGO_URL,
+        ipl_logo_url=IPL_OFFICIAL_LOGO_URL,
+        title="IPL 2008-2025 Historical Dominance Prediction",
+        desc="Trained on historical data (2008-2025), showing the baseline probability before the tournament started."
+    )
+
+@app.route("/current-2026-prediction")
+def current_2026_prediction():
+    import json
+    from pathlib import Path
+    pred_path = Path("artifacts/ipl/current_2026_prediction.json")
+    if not pred_path.exists():
+        return "2026 current predictions not found.", 404
+    
+    with open(pred_path, "r") as f:
+        data = json.load(f)
+        
+    return render_template(
+        "tournament_prediction.html",
+        data=data,
+        main_logo_url=MAIN_WEBSITE_LOGO_URL,
+        ipl_logo_url=IPL_OFFICIAL_LOGO_URL,
+        title="IPL 2026 Current Data Prediction",
+        desc="Predictions calculated purely from the current ongoing 2026 season data and standings."
+    )
+@app.route("/admin", methods=["GET", "POST"])
+def admin_panel():
+    import subprocess
+    import sys
+    from werkzeug.utils import secure_filename
+    import os
+    
+    # Secure Password from Environment Variable (do not hardcode)
+    admin_password = os.environ.get("ADMIN_PASSWORD", "cricklytics_admin_123")
+    
+    if request.method == "POST":
+        # Handle Login Submission
+        if "password" in request.form:
+            if request.form["password"] == admin_password:
+                session["admin_logged_in"] = True
+                return redirect(url_for("admin_panel"))
+            else:
+                return render_template("admin_panel.html", show_login=True, error="Invalid password.")
+                
+        # Must be logged in to upload
+        if not session.get("admin_logged_in"):
+            return render_template("admin_panel.html", show_login=True)
+            
+        if "csv_file" not in request.files:
+            return render_template("admin_panel.html", error="No file uploaded.")
+            
+        file = request.files["csv_file"]
+        if file.filename == "":
+            return render_template("admin_panel.html", error="No selected file.")
+            
+        if file and file.filename.endswith(".csv"):
+            try:
+                # Save and overwrite the previous CSV
+                save_path = os.path.join(os.getcwd(), "2026_Data_IPL.csv")
+                file.save(save_path)
+                
+                # Trigger the cloud training script
+                subprocess.run([sys.executable, "scripts/train_ipl_2026_current.py"], check=True)
+                
+                # Redirect to the predictions page to see the new data
+                return redirect(url_for("current_2026_prediction"))
+            except Exception as e:
+                return render_template("admin_panel.html", error=f"Training failed: {str(e)}")
+        else:
+            return render_template("admin_panel.html", error="Please upload a valid CSV file.")
+            
+    # GET Request: check if logged in
+    if not session.get("admin_logged_in"):
+        return render_template("admin_panel.html", show_login=True)
+        
+    return render_template("admin_panel.html")
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     prediction = None
-    competition = request.values.get("competition", session.get("competition", "international")).strip().lower()
+    competition = request.values.get("competition", session.get("competition", "ipl")).strip().lower()
     if competition not in COMPETITION_CONFIGS:
-        competition = "international"
+        competition = "ipl"
 
     previous_competition = session.get("competition")
     switched_competition = previous_competition is not None and previous_competition != competition

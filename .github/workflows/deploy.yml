@@ -1,0 +1,46 @@
+name: Sync to Hugging Face Spaces
+
+on:
+  push:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      # Uncomment these steps if you want GitHub to automatically pull DVC data before pushing to Hugging Face
+      # - name: Setup Python
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: '3.10'
+      #     
+      # - name: Install DVC
+      #   run: pip install dvc dvc-s3
+      #
+      # - name: Configure DVC and Pull Data
+      #   env:
+      #     DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_PAT }}
+      #   run: |
+      #     dvc remote modify origin --local auth basic
+      #     dvc remote modify origin --local user YOUR_USERNAME
+      #     dvc remote modify origin --local password $DAGSHUB_USER_TOKEN
+      #     dvc pull -r origin
+
+      - name: Push to Hugging Face Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git remote add hf https://Naveen-2007:${HF_TOKEN}@huggingface.co/spaces/Naveen-2007/cricklytics
+          # Force push to the main branch of the Hugging Face space
+          git push -f hf main
