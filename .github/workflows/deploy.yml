@@ -47,9 +47,16 @@ jobs:
           set -euo pipefail
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
+          
+          # Create an orphan branch to drop all historical large blobs
+          git checkout --orphan hf-deploy
+          git add -A
+          git commit -m "Deploy latest version to Hugging Face"
+          
           git remote add hf https://Naveen-2007:${HF_TOKEN}@huggingface.co/spaces/Naveen-2007/cricklytics || \
             git remote set-url hf https://Naveen-2007:${HF_TOKEN}@huggingface.co/spaces/Naveen-2007/cricklytics
-          # Force push to the main branch of the Hugging Face space
-          git push -f hf main
-          # Ensure LFS objects are uploaded (CSV/PKL are LFS-tracked)
+          
+          # Force push the orphan branch to HF's main branch
+          git push -f hf hf-deploy:main
+          # Ensure LFS objects are uploaded
           git lfs push --all hf
