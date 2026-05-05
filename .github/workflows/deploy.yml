@@ -50,6 +50,9 @@ jobs:
           
           # Create an orphan branch to drop all historical large blobs
           git checkout --orphan hf-deploy
+          # Remove large/binary artifacts that HF blocks in git pushes
+          rm -f artifacts/ipl/training_monitor_2026.png
+          rm -f artifacts/ipl/training_monitor_historical.png
           git add -A
           git commit -m "Deploy latest version to Hugging Face"
           
