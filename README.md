@@ -11,7 +11,7 @@ short_description: Real-time Institutional Cricket Score Prediction and Analytic
 ---
 
 <div align="center">
-  <img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/84/Indian_Premier_League_Official_Logo.svg/1200px-Indian_Premier_League_Official_Logo.svg.png" alt="IPL Logo" width="150"/>
+  <img src="https://raw.githubusercontent.com/Naveenkumar-2007/Cricklytics-Ball-by-Ball-Cricket-Analytics-and-Prediction-System/main/static/images/brand/ipl-official.png" alt="IPL Logo" width="150"/>
   <h1>🏏 Cricklytics: Institutional Analytics Engine</h1>
   <p><strong>Ball-by-Ball Live Predictions, Automated MLOps, & Cloud Dashboards</strong></p>
 </div>
@@ -22,10 +22,10 @@ short_description: Real-time Institutional Cricket Score Prediction and Analytic
 Cricklytics utilizes **Random Forest Classification** and **GridSearchCV Hyperparameter Tuning** to prevent overfitting while generating beautiful, high-fidelity sports analytics. The charts below are auto-generated from our ML pipeline.
 
 ### 🏆 2026 IPL Current Season Analytics
-![2026 Training Monitor](artifacts/ipl/training_monitor_2026.png)
+![2026 Training Monitor](https://raw.githubusercontent.com/Naveenkumar-2007/Cricklytics-Ball-by-Ball-Cricket-Analytics-and-Prediction-System/main/artifacts/ipl/training_monitor_2026.png)
 
 ### 📈 2008-2025 Historical Baseline Performance
-![Historical Monitor](artifacts/ipl/training_monitor_historical.png)
+![Historical Monitor](https://raw.githubusercontent.com/Naveenkumar-2007/Cricklytics-Ball-by-Ball-Cricket-Analytics-and-Prediction-System/main/artifacts/ipl/training_monitor_historical.png)
 
 ---
 
