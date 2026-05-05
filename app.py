@@ -142,6 +142,23 @@ def _filter_current_ipl_teams(teams: List[str]) -> List[str]:
         selected.append(chosen)
     return selected
 
+
+def _load_competition_metadata(competition: str) -> Dict[str, List[str]]:
+    cfg = COMPETITION_CONFIGS[competition]
+    meta_path = cfg["artifact_root"] / "metadata.json"
+    if not meta_path.exists():
+        return {"teams": [], "venues": []}
+
+    try:
+        payload = json.loads(meta_path.read_text(encoding="utf-8"))
+    except Exception:
+        logger.exception("Failed to read competition metadata: %s", meta_path)
+        return {"teams": [], "venues": []}
+
+    teams = payload.get("teams") or []
+    venues = payload.get("venues") or []
+    return {"teams": list(teams), "venues": list(venues)}
+
 def _competition_paths(competition: str) -> Dict[str, Path]:
     cfg = COMPETITION_CONFIGS[competition]
     artifact_root = cfg["artifact_root"]
@@ -188,15 +205,20 @@ def _default_teams(competition: str, teams: List[str]) -> Dict[str, str]:
     }
 
 
-def _runtime_for_competition(competition: str) -> Dict[str, object]:
-    if competition in RUNTIME_CACHE:
-        return RUNTIME_CACHE[competition]
+def _runtime_for_competition(competition: str, eager_load: bool = True) -> Dict[str, object]:
+    cached = RUNTIME_CACHE.get(competition)
+    if cached and (cached.get("engine") is not None or not eager_load):
+        return cached
 
     paths = _competition_paths(competition)
     ready = _artifacts_ready(paths)
 
     load_error = None
-    if ready:
+    engine = None
+    teams: List[str] = []
+    venues: List[str] = []
+
+    if ready and eager_load:
         try:
             engine = RealtimeEngine(
                 first_model_path=paths["first_model_path"],
@@ -211,18 +233,18 @@ def _runtime_for_competition(competition: str) -> Dict[str, object]:
             venues = sorted(full_df["venue"].dropna().astype(str).str.strip().unique().tolist())
         except Exception as exc:
             logger.exception("Failed to load runtime artifacts for competition=%s", competition)
-            engine = None
-            teams = []
-            venues = []
             load_error = (
                 f"{COMPETITION_CONFIGS[competition]['label']} artifacts could not be loaded: {exc}. "
                 "This usually means environment version mismatch. "
                 "Use the project .venv and install requirements.txt."
             )
-    else:
-        engine = None
-        teams = []
-        venues = []
+
+    if engine is None:
+        meta = _load_competition_metadata(competition)
+        teams = _order_teams(meta["teams"]) if meta["teams"] else teams
+        if competition == "ipl" and teams:
+            teams = _filter_current_ipl_teams(teams)
+        venues = meta["venues"] if meta["venues"] else venues
 
     runtime = {
         "engine": engine,
@@ -1079,7 +1101,8 @@ def index():
     switched_competition = previous_competition is not None and previous_competition != competition
     session["competition"] = competition
 
-    runtime = _runtime_for_competition(competition)
+    eager_load = request.method == "POST"
+    runtime = _runtime_for_competition(competition, eager_load=eager_load)
     engine = runtime["engine"]
     teams = runtime["teams"]
     venues = runtime["venues"]

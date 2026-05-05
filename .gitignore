@@ -66,6 +66,8 @@ artifacts/**
 !artifacts/.gitkeep
 !artifacts/ipl/*.png
 !artifacts/ipl/*.json
+!artifacts/*.json
+!artifacts/dual/*.json
 !artifacts/dual/
 !artifacts/dual/full_context.csv
 !artifacts/dual/first_innings_model.pkl
