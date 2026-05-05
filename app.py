@@ -1015,8 +1015,31 @@ def tournament_prediction():
         data=data,
         main_logo_url=MAIN_WEBSITE_LOGO_URL,
         ipl_logo_url=IPL_OFFICIAL_LOGO_URL,
+        back_url="/?competition=ipl",
         title="IPL 2008-2025 Historical Dominance Prediction",
         desc="Trained on historical data (2008-2025), showing the baseline probability before the tournament started."
+    )
+
+
+@app.route("/international-prediction")
+def international_prediction():
+    import json
+    from pathlib import Path
+    pred_path = Path("artifacts/tournament_winner_prediction.json")
+    if not pred_path.exists():
+        return "International predictions not found. Please train the model first.", 404
+
+    with open(pred_path, "r") as f:
+        data = json.load(f)
+
+    return render_template(
+        "tournament_prediction.html",
+        data=data,
+        main_logo_url=MAIN_WEBSITE_LOGO_URL,
+        international_logo_url=INTERNATIONAL_OFFICIAL_LOGO_URL,
+        back_url="/?competition=international",
+        title="International 2016-2024 Historical Dominance Prediction",
+        desc="Trained on World Cup data (2016-2024), showing baseline probability by team."
     )
 
 @app.route("/current-2026-prediction")

@@ -77,7 +77,7 @@
                 <h1 class="brand-title">{{ title }}</h1>
             </div>
             <div>
-                <a href="/?competition=ipl" class="btn">Back to Home</a>
+                <a href="{{ back_url|default('/?competition=ipl', true) }}" class="btn">Back to Home</a>
             </div>
         </div>
 
