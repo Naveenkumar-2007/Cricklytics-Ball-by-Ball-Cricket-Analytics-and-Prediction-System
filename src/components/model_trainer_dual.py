@@ -14,6 +14,7 @@ from sklearn.ensemble import (
 )
 from sklearn.inspection import permutation_importance
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.base import is_classifier
 from sklearn.metrics import (
     accuracy_score,
     brier_score_loss,
@@ -405,7 +406,7 @@ class DualModelTrainer:
                     estimator=self._build_pipeline(preprocessor, model),
                     param_distributions=space,
                     n_iter=self.tuning_n_iter,
-                    scoring="neg_brier_score",
+                    scoring="accuracy",
                     cv=cv,
                     random_state=42,
                     n_jobs=-1,
@@ -525,7 +526,7 @@ class DualModelTrainer:
         return calibrated, row
 
     def _save_feature_importance(self, trained_model, X_test, y_test, features, task_key):
-        scoring = "neg_root_mean_squared_error" if task_key != "second_innings" else "roc_auc"
+        scoring = "accuracy" if is_classifier(trained_model) else "neg_root_mean_squared_error"
         result = permutation_importance(
             trained_model,
             X_test,
