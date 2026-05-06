@@ -8,6 +8,7 @@ import os
 import json
 import hashlib
 import secrets
+from functools import wraps
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
@@ -57,6 +58,30 @@ def _google_redirect_uri() -> str:
 
 def _auth_page_endpoint(source: str) -> str:
     return "create_account" if source == "create-account" else "login"
+
+
+def _safe_next_url(target: str) -> str:
+    target = str(target or "").strip()
+    if not target.startswith("/") or target.startswith("//"):
+        return url_for("index")
+    return target
+
+
+def _post_login_redirect() -> str:
+    return _safe_next_url(request.args.get("next") or session.pop("login_next", None))
+
+
+def login_required(view_func):
+    @wraps(view_func)
+    def _wrapped(*args, **kwargs):
+        if session.get("user_logged_in"):
+            return view_func(*args, **kwargs)
+        next_url = request.full_path if request.query_string else request.path
+        if next_url.endswith("?"):
+            next_url = next_url[:-1]
+        return redirect(url_for("login", next=next_url))
+
+    return _wrapped
 
 
 def _load_auth_users() -> List[Dict[str, str]]:
@@ -1081,6 +1106,7 @@ def _build_chart_images(chart_data):
 
 
 @app.route("/tournament-prediction")
+@login_required
 def tournament_prediction():
     import json
     from pathlib import Path
@@ -1103,6 +1129,7 @@ def tournament_prediction():
 
 
 @app.route("/international-prediction")
+@login_required
 def international_prediction():
     import json
     from pathlib import Path
@@ -1124,6 +1151,7 @@ def international_prediction():
     )
 
 @app.route("/current-2026-prediction")
+@login_required
 def current_2026_prediction():
     import json
     from pathlib import Path
@@ -1162,7 +1190,7 @@ def login():
         email = request.form.get("email", "").strip() or "email-user@cricklytics.local"
         name = request.form.get("name", "").strip() or email.split("@")[0]
         _set_user_session(name=name, email=email, provider="email")
-        return redirect(url_for("index"))
+        return redirect(_post_login_redirect())
 
     return render_template(
         "login.html",
@@ -1180,7 +1208,7 @@ def create_account():
         email = request.form.get("email", "").strip() or "new-user@cricklytics.local"
         name = request.form.get("name", "").strip() or email.split("@")[0]
         _set_user_session(name=name, email=email, provider="email")
-        return redirect(url_for("index"))
+        return redirect(_post_login_redirect())
 
     return render_template(
         "create_account.html",
@@ -1195,6 +1223,7 @@ def create_account():
 @app.route("/auth/google")
 def google_login():
     source = request.args.get("source", "login").strip().lower()
+    session["login_next"] = _safe_next_url(request.args.get("next"))
     client_id = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
     client_secret = (os.getenv("GOOGLE_CLIENT_SECRET") or "").strip()
     if not client_id or not client_secret:
@@ -1256,7 +1285,7 @@ def google_callback():
         email=profile.get("email", ""),
         provider="google",
     )
-    return redirect(url_for("index"))
+    return redirect(_post_login_redirect())
 
 
 @app.route("/logout")
@@ -1319,6 +1348,7 @@ def admin_panel():
     return render_template("admin_panel.html", auth_users=_load_auth_users())
 
 @app.route("/dashboard", methods=["GET", "POST"])
+@login_required
 def index():
     prediction = None
     competition = request.values.get("competition", session.get("competition", "ipl")).strip().lower()

@@ -255,6 +255,9 @@
 
             <form class="google-auth-form" action="/auth/google" method="GET" target="_top">
                 <input type="hidden" name="source" value="login" />
+                {% if request.args.get('next') %}
+                <input type="hidden" name="next" value="{{ request.args.get('next') }}" />
+                {% endif %}
                 <button class="google-button" type="submit">
                     <svg class="google-icon" viewBox="0 0 48 48" aria-hidden="true">
                         <path fill="#EA4335" d="M24 9.5c3.2 0 6.1 1.1 8.4 3.2l6.3-6.3C34.8 2.8 29.7.7 24 .7 14.7.7 6.6 6 2.7 13.8l7.7 6C12.2 13.8 17.6 9.5 24 9.5z"/>
@@ -279,7 +282,7 @@
             </form>
 
             <div class="auth-row">
-                <a class="switch-link" href="/create-account">Create Account</a>
+                <a class="switch-link" href="{% if request.args.get('next') %}/create-account?next={{ request.args.get('next')|urlencode }}{% else %}/create-account{% endif %}">Create Account</a>
                 <a class="back-link" href="/">Back to Home</a>
             </div>
 
