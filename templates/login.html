@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Cricklytics</title>
+    <style>
+        :root {
+            --ink: #102033;
+            --muted: #61748a;
+            --line: #d9e4ef;
+            --green: #0b7a5a;
+            --navy: #0b2239;
+            --sky: #0ea5e9;
+            --paper: #ffffff;
+            --field: #f8fbfd;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Segoe UI, Arial, sans-serif;
+            color: var(--ink);
+            background: linear-gradient(135deg, #eef8ff 0%, #f8fbfd 48%, #f3faf5 100%);
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+        body.dark-mode {
+            --ink: #e6eef8;
+            --muted: #a9b9ca;
+            --line: #2d4056;
+            --paper: #101b29;
+            --field: #0c1624;
+            background: linear-gradient(135deg, #07111d 0%, #0b1420 48%, #07130f 100%);
+        }
+        .login-shell {
+            width: min(100%, 1020px);
+            display: grid;
+            grid-template-columns: minmax(0, 0.94fr) minmax(330px, 1.06fr);
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(14, 38, 63, 0.16);
+        }
+        .brand-panel {
+            background: linear-gradient(150deg, var(--navy), #103a60 62%, #092033);
+            color: #fff;
+            padding: 34px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 34px;
+            min-height: 590px;
+        }
+        .brand-lockup, .logo-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .brand-lockup img {
+            width: 58px;
+            height: 58px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            background: #fff;
+        }
+        .brand-lockup strong { font-size: 1.25rem; }
+        .brand-panel h1 {
+            margin: 0;
+            font-size: clamp(2rem, 4vw, 3.35rem);
+            line-height: 1;
+            letter-spacing: 0;
+        }
+        .brand-panel p {
+            margin: 18px 0 0;
+            color: #c8d7e8;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+        .logo-row img {
+            height: 46px;
+            max-width: 138px;
+            object-fit: contain;
+            background: #fff;
+            border-radius: 8px;
+            padding: 6px 10px;
+        }
+        .mini-card {
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .mini-card b { display: block; margin-bottom: 6px; }
+        .mini-card span { color: #c8d7e8; line-height: 1.5; }
+        .form-panel {
+            padding: clamp(28px, 6vw, 54px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .form-panel h2 {
+            margin: 0;
+            font-size: clamp(1.85rem, 3vw, 2.55rem);
+            letter-spacing: 0;
+        }
+        .form-panel p {
+            margin: 12px 0 24px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+        label {
+            display: block;
+            margin: 12px 0 6px;
+            color: #29435b;
+            font-weight: 800;
+            font-size: 0.92rem;
+        }
+        input {
+            width: 100%;
+            min-height: 48px;
+            border-radius: 8px;
+            border: 1px solid #cbd8e6;
+            background: var(--field);
+            color: var(--ink);
+            padding: 12px;
+            font: inherit;
+        }
+        .google-button, .submit-button, .back-link, .switch-link {
+            width: 100%;
+            min-height: 48px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer;
+            font: inherit;
+        }
+        .google-button {
+            border: 1px solid #cbd8e6;
+            background: #fff;
+            color: #1f3348;
+        }
+        .google-auth-form { margin: 0; }
+        .google-icon { width: 22px; height: 22px; display: block; flex: 0 0 auto; }
+        .submit-button {
+            margin-top: 16px;
+            border: 1px solid transparent;
+            background: var(--green);
+            color: #fff;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin: 22px 0;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            height: 1px;
+            background: var(--line);
+            flex: 1;
+        }
+        .auth-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .back-link, .switch-link {
+            border: 1px solid var(--line);
+            color: #29435b;
+            background: #fff;
+        }
+        .switch-link { color: #075f48; background: #f1fbf6; border-color: #cfe5db; }
+        .note {
+            margin-top: 18px;
+            border: 1px solid #d4e7f4;
+            background: #f2f9fe;
+            color: #22516d;
+            border-radius: 8px;
+            padding: 12px 14px;
+            line-height: 1.45;
+            font-size: 0.94rem;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            min-height: 40px;
+            border-radius: 8px;
+            border: 1px solid #cbd8e6;
+            background: #fff;
+            color: #1f3348;
+            padding: 8px 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        body.dark-mode .form-panel,
+        body.dark-mode .login-shell { background: var(--paper); }
+        body.dark-mode label { color: #d5e2ef; }
+        body.dark-mode input,
+        body.dark-mode .google-button,
+        body.dark-mode .back-link { background: var(--field); color: var(--ink); border-color: var(--line); }
+        body.dark-mode .switch-link { background: #0d3529; color: #99f2d4; border-color: #1d5a46; }
+        body.dark-mode .note { background: #102235; color: #b9d9ef; border-color: #24506e; }
+        body.dark-mode .theme-toggle { background: #101b29; color: #e6eef8; border-color: #2d4056; }
+        @media (max-width: 800px) {
+            body { padding: 12px; align-items: start; }
+            .login-shell { grid-template-columns: 1fr; }
+            .brand-panel { min-height: auto; padding: 26px; }
+        }
+        @media (max-width: 520px) {
+            .auth-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" type="button">Dark Mode</button>
+    <main class="login-shell">
+        <section class="brand-panel" aria-label="Cricklytics">
+            <div class="brand-lockup">
+                <img src="{{ main_logo_url }}" alt="Cricklytics logo" />
+                <strong>Cricklytics</strong>
+            </div>
+            <div>
+                <h1>Welcome back to the analytics console.</h1>
+                <p>Sign in to reach live score projections, chase probability dashboards, tournament views, and cricket decision tools.</p>
+            </div>
+            <div class="mini-card">
+                <b>Fast access with Google</b>
+                <span>Use Google sign-in for a quicker and safer login experience once it is connected.</span>
+            </div>
+            <div class="logo-row" aria-label="Supported competitions">
+                <img src="{{ ipl_logo_url }}" alt="IPL logo" />
+                <img src="{{ international_logo_url }}" alt="ICC T20 logo" />
+            </div>
+        </section>
+
+        <section class="form-panel">
+            <h2>Login account</h2>
+            <p>Access your Cricklytics dashboard and continue following live match intelligence.</p>
+            {% if auth_error %}
+            <div class="note" style="margin: 0 0 18px;">{{ auth_error }}</div>
+            {% endif %}
+
+            <form class="google-auth-form" action="/auth/google" method="GET" target="_top">
+                <input type="hidden" name="source" value="login" />
+                <button class="google-button" type="submit">
+                    <svg class="google-icon" viewBox="0 0 48 48" aria-hidden="true">
+                        <path fill="#EA4335" d="M24 9.5c3.2 0 6.1 1.1 8.4 3.2l6.3-6.3C34.8 2.8 29.7.7 24 .7 14.7.7 6.6 6 2.7 13.8l7.7 6C12.2 13.8 17.6 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.6 24.5c0-1.7-.2-3.3-.5-4.8H24v9.1h12.7c-.6 2.9-2.2 5.4-4.7 7.1l7.3 5.7c4.3-4 7.3-9.9 7.3-17.1z"/>
+                        <path fill="#FBBC05" d="M10.4 28.2c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.7-6C1 16.1.1 19.7.1 23.5s.9 7.4 2.6 10.7l7.7-6z"/>
+                        <path fill="#34A853" d="M24 46.3c5.7 0 10.6-1.9 14.1-5.1L30.8 35.5c-2 1.3-4.4 2.1-6.8 2.1-6.4 0-11.8-4.3-13.6-10.1l-7.7 6C6.6 41.2 14.7 46.3 24 46.3z"/>
+                    </svg>
+                    Sign in with Google
+                </button>
+            </form>
+
+            <div class="divider">or login with email</div>
+
+            <form method="POST">
+                <label for="email">Email address</label>
+                <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" />
+
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" placeholder="Enter password" autocomplete="current-password" />
+
+                <button class="submit-button" type="submit">Login and Open Dashboard</button>
+            </form>
+
+            <div class="auth-row">
+                <a class="switch-link" href="/create-account">Create Account</a>
+                <a class="back-link" href="/">Back to Home</a>
+            </div>
+
+            <div class="note">
+                {% if google_auth_ready %}
+                Google login is configured. Use the Google button above to sign in.
+                {% else %}
+                Add your Google client ID and secret in `.env`, then restart the server to enable Google login.
+                {% endif %}
+            </div>
+        </section>
+    </main>
+    <script>
+        (function () {
+            const key = 'cricklytics-theme';
+            const btn = document.getElementById('themeToggle');
+            function setTheme(mode) {
+                const dark = mode === 'dark';
+                document.body.classList.toggle('dark-mode', dark);
+                if (btn) btn.textContent = dark ? 'Light Mode' : 'Dark Mode';
+            }
+            setTheme(localStorage.getItem(key) || 'light');
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    const next = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+                    localStorage.setItem(key, next);
+                    setTheme(next);
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

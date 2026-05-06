@@ -32,7 +32,7 @@
             border-radius: 12px;
             padding: 2rem;
             width: 100%;
-            max-width: 600px;
+            max-width: 980px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
             border: 1px solid var(--border);
         }
@@ -43,63 +43,46 @@
             border-bottom: 1px solid var(--border);
             padding-bottom: 1rem;
             margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
-        .upload-section {
+        .upload-section, .form-group {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+            gap: 1rem;
         }
         label {
             font-weight: 600;
             font-size: 0.95rem;
             color: var(--text-muted);
         }
-        input[type="file"] {
+        input[type="file"], input[type="password"] {
             background-color: #0f172a;
             padding: 1rem;
             border-radius: 8px;
             border: 1px dashed var(--border);
             color: var(--text);
-            cursor: pointer;
             width: 100%;
             box-sizing: border-box;
         }
-        input[type="file"]:hover {
-            border-color: var(--primary);
-        }
+        input[type="password"] { border-style: solid; }
         .btn-upload {
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 6px;
+            padding: 0.85rem 1.5rem;
+            border-radius: 8px;
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
-            transition: background-color 0.2s;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 8px;
         }
-        .btn-upload:hover {
-            background-color: var(--primary-hover);
-        }
-        .btn-upload:disabled {
-            background-color: var(--border);
-            cursor: not-allowed;
-        }
+        .btn-upload:hover { background-color: var(--primary-hover); }
+        .btn-upload:disabled { background-color: var(--border); cursor: not-allowed; }
         .alert {
             padding: 1rem;
-            border-radius: 6px;
+            border-radius: 8px;
             margin-bottom: 1.5rem;
             font-weight: 500;
         }
@@ -114,24 +97,21 @@
             border: 1px solid rgba(239, 68, 68, 0.2);
         }
         .note {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: var(--text-muted);
-            margin-top: 1rem;
             line-height: 1.5;
             background-color: #0f172a;
             padding: 1rem;
-            border-radius: 6px;
+            border-radius: 8px;
             border-left: 4px solid #f59e0b;
         }
         .back-link {
             display: inline-block;
             margin-top: 1.5rem;
-            color: var(--primary);
+            color: #93c5fd;
             text-decoration: none;
-            font-size: 0.9rem;
-        }
-        .back-link:hover {
-            text-decoration: underline;
+            font-size: 0.95rem;
+            font-weight: 700;
         }
         .loader {
             display: none;
@@ -142,51 +122,135 @@
             border-top-color: white;
             animation: spin 1s ease-in-out infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .admin-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+            gap: 1.25rem;
+            align-items: start;
+        }
+        .panel {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+        }
+        .panel h2 {
+            margin: 0 0 1rem;
+            font-size: 1.1rem;
+        }
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .users-table th,
+        .users-table td {
+            border-bottom: 1px solid var(--border);
+            padding: 0.7rem 0.5rem;
+            text-align: left;
+            vertical-align: top;
+        }
+        .users-table th {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .provider-pill {
+            display: inline-flex;
+            border-radius: 999px;
+            padding: 0.25rem 0.55rem;
+            background: rgba(37, 99, 235, 0.18);
+            color: #bfdbfe;
+            font-weight: 800;
+            font-size: 0.78rem;
+        }
+        .empty-users {
+            color: var(--text-muted);
+            background: #111827;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            line-height: 1.5;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 860px) {
+            .admin-grid { grid-template-columns: 1fr; }
+            body { padding: 1rem; align-items: flex-start; }
         }
     </style>
 </head>
 <body>
-
     <div class="admin-card">
-        <h1>⚙️ MLOps Admin Panel</h1>
-        
+        <h1>Cricklytics Admin Panel</h1>
+
         {% if message %}
-        <div class="alert alert-success">✅ {{ message }}</div>
+        <div class="alert alert-success">{{ message }}</div>
         {% endif %}
         {% if error %}
-        <div class="alert alert-error">❌ {{ error }}</div>
+        <div class="alert alert-error">{{ error }}</div>
         {% endif %}
 
         {% if show_login %}
         <form action="/admin" method="POST" class="upload-section">
             <div class="form-group">
                 <label for="password">Admin Password</label>
-                <input type="password" name="password" id="password" required 
-                       style="background-color: #0f172a; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); color: var(--text); width: 100%; box-sizing: border-box;">
+                <input type="password" name="password" id="password" required>
             </div>
             <button type="submit" class="btn-upload">Login</button>
         </form>
         {% else %}
-        <form action="/admin" method="POST" enctype="multipart/form-data" class="upload-section" id="uploadForm">
-            <div class="form-group">
-                <label for="csv_file">Upload New 2026 IPL Data (2026_Data_IPL.csv)</label>
-                <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
-            </div>
-            
-            <div class="note">
-                <strong>Cloud MLOps Pipeline:</strong> When you upload a new dataset, this system will automatically delete the old CSV, save your new data, and securely trigger a background Machine Learning retraining script in the cloud. It may take 1-2 minutes to compute the new predictions and refresh the dashboards.
-            </div>
+        <div class="admin-grid">
+            <section class="panel">
+                <h2>IPL 2026 Data Refresh</h2>
+                <form action="/admin" method="POST" enctype="multipart/form-data" class="upload-section" id="uploadForm">
+                    <div class="form-group">
+                        <label for="csv_file">Upload New 2026 IPL Data (2026_Data_IPL.csv)</label>
+                        <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
+                    </div>
 
-            <button type="submit" class="btn-upload" id="submitBtn">
-                <span>Upload & Trigger Cloud Training</span>
-                <div class="loader" id="loader"></div>
-            </button>
-        </form>
+                    <div class="note">
+                        <strong>Prediction data update:</strong> Upload the latest IPL data file to refresh the current-season prediction dashboard. Processing may take 1-2 minutes.
+                    </div>
+
+                    <button type="submit" class="btn-upload" id="submitBtn">
+                        <span>Upload & Refresh Predictions</span>
+                        <div class="loader" id="loader"></div>
+                    </button>
+                </form>
+            </section>
+
+            <section class="panel">
+                <h2>Logged-In Users</h2>
+                {% if auth_users %}
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Provider</th>
+                            <th>Last Login</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in auth_users|reverse %}
+                        <tr>
+                            <td><strong>{{ user.name }}</strong><br><span style="color: var(--text-muted);">{{ user.email }}</span></td>
+                            <td><span class="provider-pill">{{ user.provider }}</span></td>
+                            <td>{{ user.last_login }}</td>
+                            <td>{{ user.login_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-users">No user logins recorded yet. Email login and Google login events will appear here.</div>
+                {% endif %}
+            </section>
+        </div>
         {% endif %}
 
-        <a href="/" class="back-link">← Back to Main Dashboard</a>
+        <a href="/dashboard" class="back-link">Back to Main Dashboard</a>
     </div>
 
     <script>
@@ -195,7 +259,7 @@
             uploadForm.addEventListener('submit', function() {
                 const btn = document.getElementById('submitBtn');
                 const loader = document.getElementById('loader');
-                btn.querySelector('span').textContent = 'Training Model in Cloud... Please Wait...';
+                btn.querySelector('span').textContent = 'Refreshing Predictions... Please Wait...';
                 btn.disabled = true;
                 loader.style.display = 'block';
             });

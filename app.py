@@ -7,8 +7,12 @@ import base64
 import os
 import json
 import hashlib
+import secrets
+from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlencode
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 
@@ -35,6 +39,83 @@ COMPETITION_CONFIGS = {
 RUNTIME_CACHE: Dict[str, Dict[str, object]] = {}
 CHART_DATA_CACHE: Dict[str, Dict[str, object]] = {}
 CHART_IMAGE_CACHE: Dict[str, Dict[str, str]] = {}
+AUTH_USERS_PATH = Path("logs") / "auth_users.json"
+
+
+def _google_auth_configured() -> bool:
+    client_id = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
+    client_secret = (os.getenv("GOOGLE_CLIENT_SECRET") or "").strip()
+    return bool(client_id and client_secret)
+
+
+def _google_redirect_uri() -> str:
+    configured = os.getenv("GOOGLE_REDIRECT_URI")
+    if configured:
+        return configured
+    return url_for("google_callback", _external=True)
+
+
+def _auth_page_endpoint(source: str) -> str:
+    return "create_account" if source == "create-account" else "login"
+
+
+def _load_auth_users() -> List[Dict[str, str]]:
+    if not AUTH_USERS_PATH.exists():
+        return []
+    try:
+        payload = json.loads(AUTH_USERS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        logger.exception("Failed to read auth users file")
+        return []
+    if not isinstance(payload, list):
+        return []
+    return [row for row in payload if isinstance(row, dict)]
+
+
+def _record_auth_user(name: str, email: str, provider: str) -> None:
+    AUTH_USERS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    users = _load_auth_users()
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    clean_email = (email or "unknown@example.com").strip().lower()
+    clean_name = (name or clean_email.split("@")[0] or "Cricklytics User").strip()
+
+    existing = None
+    for row in users:
+        if str(row.get("email", "")).lower() == clean_email:
+            existing = row
+            break
+
+    if existing:
+        existing.update(
+            {
+                "name": clean_name,
+                "email": clean_email,
+                "provider": provider,
+                "last_login": now,
+                "login_count": int(existing.get("login_count", 0)) + 1,
+            }
+        )
+    else:
+        users.append(
+            {
+                "name": clean_name,
+                "email": clean_email,
+                "provider": provider,
+                "first_login": now,
+                "last_login": now,
+                "login_count": 1,
+            }
+        )
+
+    AUTH_USERS_PATH.write_text(json.dumps(users[-200:], indent=2), encoding="utf-8")
+
+
+def _set_user_session(name: str, email: str, provider: str) -> None:
+    clean_email = (email or "unknown@example.com").strip().lower()
+    clean_name = (name or clean_email.split("@")[0] or "Cricklytics User").strip()
+    session["user_logged_in"] = True
+    session["user"] = {"name": clean_name, "email": clean_email, "provider": provider}
+    _record_auth_user(clean_name, clean_email, provider)
 
 
 PREFERRED_TEAM_ORDER = [
@@ -1015,7 +1096,7 @@ def tournament_prediction():
         data=data,
         main_logo_url=MAIN_WEBSITE_LOGO_URL,
         ipl_logo_url=IPL_OFFICIAL_LOGO_URL,
-        back_url="/?competition=ipl",
+        back_url="/dashboard?competition=ipl",
         title="IPL 2008-2025 Historical Dominance Prediction",
         desc="Trained on historical data (2008-2025), showing the baseline probability before the tournament started."
     )
@@ -1037,7 +1118,7 @@ def international_prediction():
         data=data,
         main_logo_url=MAIN_WEBSITE_LOGO_URL,
         international_logo_url=INTERNATIONAL_OFFICIAL_LOGO_URL,
-        back_url="/?competition=international",
+        back_url="/dashboard?competition=international",
         title="International 2016-2024 Historical Dominance Prediction",
         desc="Trained on World Cup data (2016-2024), showing baseline probability by team."
     )
@@ -1058,9 +1139,133 @@ def current_2026_prediction():
         data=data,
         main_logo_url=MAIN_WEBSITE_LOGO_URL,
         ipl_logo_url=IPL_OFFICIAL_LOGO_URL,
+        back_url="/dashboard?competition=ipl",
         title="IPL 2026 Current Data Prediction",
         desc="Predictions calculated purely from the current ongoing 2026 season data and standings."
     )
+
+
+@app.route("/")
+def landing():
+    return render_template(
+        "landing.html",
+        main_logo_url=MAIN_WEBSITE_LOGO_URL,
+        ipl_logo_url=IPL_OFFICIAL_LOGO_URL,
+        international_logo_url=INTERNATIONAL_OFFICIAL_LOGO_URL,
+        google_auth_ready=_google_auth_configured(),
+    )
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip() or "email-user@cricklytics.local"
+        name = request.form.get("name", "").strip() or email.split("@")[0]
+        _set_user_session(name=name, email=email, provider="email")
+        return redirect(url_for("index"))
+
+    return render_template(
+        "login.html",
+        main_logo_url=MAIN_WEBSITE_LOGO_URL,
+        ipl_logo_url=IPL_OFFICIAL_LOGO_URL,
+        international_logo_url=INTERNATIONAL_OFFICIAL_LOGO_URL,
+        google_auth_ready=_google_auth_configured(),
+        auth_error=request.args.get("auth_error"),
+    )
+
+
+@app.route("/create-account", methods=["GET", "POST"])
+def create_account():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip() or "new-user@cricklytics.local"
+        name = request.form.get("name", "").strip() or email.split("@")[0]
+        _set_user_session(name=name, email=email, provider="email")
+        return redirect(url_for("index"))
+
+    return render_template(
+        "create_account.html",
+        main_logo_url=MAIN_WEBSITE_LOGO_URL,
+        ipl_logo_url=IPL_OFFICIAL_LOGO_URL,
+        international_logo_url=INTERNATIONAL_OFFICIAL_LOGO_URL,
+        google_auth_ready=_google_auth_configured(),
+        auth_error=request.args.get("auth_error"),
+    )
+
+
+@app.route("/auth/google")
+def google_login():
+    source = request.args.get("source", "login").strip().lower()
+    client_id = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
+    client_secret = (os.getenv("GOOGLE_CLIENT_SECRET") or "").strip()
+    if not client_id or not client_secret:
+        return redirect(url_for(_auth_page_endpoint(source), auth_error="Google sign-in is not configured yet."))
+
+    state = secrets.token_urlsafe(24)
+    session["google_oauth_state"] = state
+    session["google_oauth_source"] = source
+    params = {
+        "client_id": client_id,
+        "redirect_uri": _google_redirect_uri(),
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "select_account",
+        "state": state,
+    }
+    return redirect("https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params))
+
+
+@app.route("/auth/google/callback")
+def google_callback():
+    source = session.pop("google_oauth_source", "login")
+    if request.args.get("state") != session.pop("google_oauth_state", None):
+        return redirect(url_for(_auth_page_endpoint(source), auth_error="Google sign-in state mismatch. Please try again."))
+
+    code = request.args.get("code")
+    if not code:
+        return redirect(url_for(_auth_page_endpoint(source), auth_error="Google sign-in was cancelled."))
+
+    try:
+        token_response = requests.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": (os.getenv("GOOGLE_CLIENT_ID") or "").strip(),
+                "client_secret": (os.getenv("GOOGLE_CLIENT_SECRET") or "").strip(),
+                "redirect_uri": _google_redirect_uri(),
+                "grant_type": "authorization_code",
+            },
+            timeout=15,
+        )
+        token_response.raise_for_status()
+        access_token = token_response.json()["access_token"]
+
+        user_response = requests.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=15,
+        )
+        user_response.raise_for_status()
+        profile = user_response.json()
+    except Exception:
+        logger.exception("Google sign-in failed")
+        return redirect(url_for(_auth_page_endpoint(source), auth_error="Google sign-in failed. Please try again."))
+
+    _set_user_session(
+        name=profile.get("name") or profile.get("email", "").split("@")[0],
+        email=profile.get("email", ""),
+        provider="google",
+    )
+    return redirect(url_for("index"))
+
+
+@app.route("/logout")
+def logout():
+    session.pop("user_logged_in", None)
+    session.pop("user", None)
+    return redirect(url_for("landing"))
+
+
 @app.route("/admin", methods=["GET", "POST"])
 def admin_panel():
     import subprocess
@@ -1111,9 +1316,9 @@ def admin_panel():
     if not session.get("admin_logged_in"):
         return render_template("admin_panel.html", show_login=True)
         
-    return render_template("admin_panel.html")
+    return render_template("admin_panel.html", auth_users=_load_auth_users())
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/dashboard", methods=["GET", "POST"])
 def index():
     prediction = None
     competition = request.values.get("competition", session.get("competition", "ipl")).strip().lower()
@@ -1481,6 +1686,7 @@ def index():
         main_logo_url=MAIN_WEBSITE_LOGO_URL,
         ipl_logo_url=IPL_OFFICIAL_LOGO_URL,
         international_logo_url=INTERNATIONAL_OFFICIAL_LOGO_URL,
+        current_user=session.get("user"),
     )
 
 
