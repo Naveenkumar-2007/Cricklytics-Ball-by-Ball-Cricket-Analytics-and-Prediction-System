@@ -53,6 +53,7 @@ jobs:
           # Remove large/binary artifacts that HF blocks in git pushes
           rm -f artifacts/ipl/training_monitor_2026.png
           rm -f artifacts/ipl/training_monitor_historical.png
+          rm -f artifacts/training_monitor_international.png
           git add -A
           git commit -m "Deploy latest version to Hugging Face"
           
