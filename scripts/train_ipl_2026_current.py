@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import json
+import os
 from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')
@@ -85,13 +86,25 @@ def generate_analytics_chart(df, output_path, title):
         
     # Plot 3 (0,2): Extras Breakdown
     if 'Extras' in df.columns:
-        df['Extras_Str'] = df['Extras'].astype(str)
-        wides = df['Extras_Str'].str.contains('WD').sum()
-        nbs = df['Extras_Str'].str.contains('NB').sum()
-        lbs = df['Extras_Str'].str.contains('LB').sum()
-        byes = df['Extras_Str'].str.contains('B').sum() - lbs - nbs
-        axes[0, 2].pie([wides, nbs, lbs, max(0, byes)], labels=['Wides', 'No Balls', 'Leg Byes', 'Byes'], 
-                       autopct='%1.1f%%', startangle=90, colors=['#9467bd', '#8c564b', '#e377c2', '#7f7f7f'])
+        wides = nbs = lbs = byes = 0
+        if 'wide' in df.columns:
+            wides = (pd.to_numeric(df['wide'], errors='coerce') > 0).sum()
+            nbs = (pd.to_numeric(df.get('noballs'), errors='coerce') > 0).sum()
+            lbs = (pd.to_numeric(df.get('legbyes'), errors='coerce') > 0).sum()
+            byes = (pd.to_numeric(df.get('byes'), errors='coerce') > 0).sum()
+        else:
+            df['Extras_Str'] = df['Extras'].astype(str)
+            wides = df['Extras_Str'].str.contains('WD').sum()
+            nbs = df['Extras_Str'].str.contains('NB').sum()
+            lbs = df['Extras_Str'].str.contains('LB').sum()
+            byes = df['Extras_Str'].str.contains('B').sum() - lbs - nbs
+            
+        extras_counts = [wides, nbs, lbs, max(0, byes)]
+        if sum(extras_counts) > 0:
+            axes[0, 2].pie(extras_counts, labels=['Wides', 'No Balls', 'Leg Byes', 'Byes'], 
+                           autopct='%1.1f%%', startangle=90, colors=['#9467bd', '#8c564b', '#e377c2', '#7f7f7f'])
+        else:
+            axes[0, 2].text(0.5, 0.5, 'No Extras Data', ha='center', va='center', fontsize=12)
         axes[0, 2].set_title('Extras Breakdown (2026)', fontsize=16)
 
     # Plot 4 (1,0): Teams Hitting Most 6s & 4s
@@ -229,6 +242,25 @@ def run_2026_prediction():
     print("Reading 2026 dataset...")
     df_2026 = pd.read_csv('2026_Data_IPL.csv')
     
+    # Map new schema to expected old schema if it has lowercase columns
+    if 'batting_team' in df_2026.columns:
+        df_2026 = df_2026.rename(columns={
+            'match_id': 'Match_ID',
+            'batting_team': 'Batting_Team',
+            'bowling_team': 'Bowling_Team',
+            'striker': 'Batter',
+            'bowler': 'Bowler',
+            'over': 'Overs',
+            'runs_of_bat': 'Runs ',
+            'extras': 'Extras',
+            'innings': 'Innings'
+        })
+        df_2026['Ball_Runs'] = pd.to_numeric(df_2026['Runs '], errors='coerce').fillna(0) + pd.to_numeric(df_2026['Extras'], errors='coerce').fillna(0)
+        df_2026['Total_Runs '] = df_2026.groupby(['Match_ID', 'Innings'])['Ball_Runs'].cumsum()
+        df_2026['Innings'] = df_2026['Innings'].astype(str).map({'1': '1st', '2': '2nd', '1.0': '1st', '2.0': '2nd'})
+        if 'player_dismissed' in df_2026.columns:
+            df_2026['Wickets'] = df_2026.groupby(['Match_ID', 'Innings'])['player_dismissed'].transform(lambda x: x.notna().cumsum())
+
     # FIX: Strip trailing spaces from all string columns to fix missing PBKS/SRH matches
     for col in ['Innings', 'Batting_Team', 'Bowling_Team', 'Batter', 'Bowler', 'Extras']:
         if col in df_2026.columns:
@@ -444,11 +476,6 @@ def run_2026_prediction():
     
     with open(output_dir / "current_2026_prediction.json", "w") as f:
         json.dump(out_payload, f, indent=2)
-        
-    print("Generated current 2026 predictions successfully!")
-
-if __name__ == "__main__":
-    run_2026_prediction()
         
     print("Generated current 2026 predictions successfully!")
 
