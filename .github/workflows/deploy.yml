@@ -63,4 +63,5 @@ jobs:
           # Force push the orphan branch to HF's main branch
           git push -f hf hf-deploy:main
           # Ensure LFS objects are uploaded
+          git config lfs.allowincompletepush true
           git lfs push --all hf
